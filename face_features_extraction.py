@@ -212,5 +212,9 @@ def extract_face_features(image, model_path):
     FaceLandmarker, options = init_face_landmark(model_path)
 
     extracted_values = extract_lab_values_from_photo(image, FaceLandmarker, options)
-    print(extracted_values)
     return extracted_values
+
+
+# image = 'img.png'
+# img = cv2.imread(image)
+# print(extract_face_features(img, 'C:/studia/P_nw/face_landmarker.task'))
