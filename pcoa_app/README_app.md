@@ -1,16 +1,16 @@
 # How to run the app - macOS/Linux
 
 ```bash
-git clone https://github.com/Gosiuniunia/Scientific-and-implementation-project.git
+git clone https://github.com/Gosiuniunia/Scientific-and-implementation-project-2.git
 cd pcoa_app
 source .venv/Scripts/activate
-python -m pip install app_requirements.txt
-python run_pcoa_app.py
+python3 -m pip install app_requirements.txt
+python3 run_pcoa_app.py
 ```
 
 # How to run the app - Windows
 ```bash
-git clone https://github.com/Gosiuniunia/Scientific-and-implementation-project.git
+git clone https://github.com/Gosiuniunia/Scientific-and-implementation-project-2.git
 cd pcoa_app
 .venv/Scripts/Activate.ps1 # for PowerShell users
 python -m pip install app_requirements.txt
