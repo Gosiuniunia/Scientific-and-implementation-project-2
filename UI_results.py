@@ -5,6 +5,7 @@ It shows the seasonal color type, description, and a palette of recommended colo
 
 # Parameter defining the season to display
 season = "autumn"
+# season = None
 
 import gradio as gr
 
@@ -52,24 +53,38 @@ def show_season():
     """
     return html
 
-def dummy_back():
-    print("Funkcja powrotu zostanie dodana później.")
-    return
+with gr.Blocks(fill_height=True) as demo:
+    with gr.Walkthrough(selected=1) as walkthrough:
 
-with gr.Blocks() as demo:
-    gr.Markdown("## Your Seasonal Color Analysis Result")
-    gr.Markdown("Based on the analysis, your seasonal color is:")
-    gr.Markdown(f"# {season.capitalize()}")
-    gr.Markdown("## Description:")
-    gr.Markdown(f'{data[season]["description"]}')
+        with gr.Step("Step 1", id=1):
+            # home page
+            btn = gr.Button("Hi")
+            btn.click(lambda: gr.Walkthrough(selected=2), outputs=walkthrough)
 
-    colors_output = gr.HTML()
-    demo.load(fn=show_season, outputs=[colors_output])
+        with gr.Step("Step 2", id=2):
+            # input page and prediction
+            gr.Markdown("Input photo")
+            btn = gr.Button("predict")
+            btn.click(lambda: gr.Walkthrough(selected=3), outputs=walkthrough)
 
-    gr.Markdown("## Recommended Jewellery:")
-    gr.Markdown(f'{data[season]["jewellery"]}')
+        with gr.Step("Step 3", id=3):
+            if season == None:
+                gr.Markdown("## No season detected.")
+                gr.Markdown("Please go back to the home page to try again.")
+            else:
+                gr.Markdown("## Your Seasonal Color Analysis Result")
+                gr.Markdown("Based on the analysis, your seasonal color is:")
+                gr.Markdown(f"# {season.capitalize()}")
+                gr.Markdown("## Description:")
+                gr.Markdown(f'{data[season]["description"]}')
 
-    back_button = gr.Button("Back to Home")
-    back_button.click(dummy_back)
+                colors_output = gr.HTML()
+                demo.load(fn=show_season, outputs=[colors_output])
 
-demo.launch()
+                gr.Markdown("## Recommended Jewellery:")
+                gr.Markdown(f'{data[season]["jewellery"]}')
+
+            back_button = gr.Button("Back to Home")
+            back_button.click(lambda: gr.Walkthrough(selected=1), outputs=walkthrough)
+
+demo.launch(theme=gr.themes.Monochrome())
