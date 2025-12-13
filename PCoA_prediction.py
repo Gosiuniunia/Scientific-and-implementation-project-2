@@ -101,7 +101,7 @@ def predict_class(model_path, features):
 
 
 
-features = [67, 129, 129, 209, 135, 141, 82, 140, 142]
-model_path = "svc.pkl"
-print(predict_class(model_path, features))
+# features = [67, 129, 129, 209, 135, 141, 82, 140, 142]
+# model_path = "svc.pkl"
+# print(predict_class(model_path, features))
 
