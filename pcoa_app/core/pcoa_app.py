@@ -24,7 +24,7 @@ class PCOAApp:
                 (
                     self.img_input,
                     self.status_message,
-                    self.img_preview,
+                    # self.img_preview,
                     self.analyze_button,
                     self.progress_bar,
                 ) = self.build_photo_upload_section()
@@ -54,7 +54,7 @@ class PCOAApp:
                     outputs=[
                         self.analyze_button,
                         self.status_message,
-                        self.img_preview,
+                        # self.img_preview,
                     ],
                 )
                 self.analyze_button.click(
@@ -89,13 +89,13 @@ class PCOAApp:
             return (
                 gr.update(visible=False),  # analyze_button
                 gr.update(value="Please upload an image to begin analysis", visible=True),
-                gr.update(visible=False),  # img_preview
+                # gr.update(visible=False),  # img_preview
             )
 
         return (
             gr.update(visible=True),   # analyze_button
             gr.update(value="Image uploaded. Ready to analyze!", visible=True),
-            gr.update(value=img, visible=True),  # img_preview
+            # gr.update(value=img, visible=True),  # img_preview
         )
 
     def build_gdpr_modal(self):
@@ -161,12 +161,12 @@ class PCOAApp:
         )
         
         # Image preview
-        img_preview = gr.Image(
-            label="✨ Processed Image",
-            interactive=False,
-            visible=False,
-            height=300
-        )
+        # img_preview = gr.Image(
+        #     label="✨ Processed Image",
+        #     interactive=False,
+        #     visible=False,
+        #     height=300
+        # )
         
         # Analyze button (initially hidden)
         analyze_button = gr.Button(
@@ -179,7 +179,9 @@ class PCOAApp:
         # Progress indicator
         progress_bar = gr.Progress()
 
-        return img_input, status_message, img_preview, analyze_button, progress_bar
+        return img_input, status_message, analyze_button, progress_bar
+
+        # return img_input, status_message, img_preview, analyze_button, progress_bar
     
     def run_prediction(self, image: np.ndarray, progress=gr.Progress()):
         """Full prediction logic with state management and progress tracking."""
