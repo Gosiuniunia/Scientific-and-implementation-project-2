@@ -2,8 +2,6 @@ import numpy as np
 import gradio as gr
 from PIL import Image, ImageDraw
 import io
-from utils.enums import *
-
 
 class ColorAnalysisModel:
     def __init__(self):

@@ -5,79 +5,180 @@ from core.pcoa_image_preprocessing import PCOAImageProcessor
 
 
 class PCOAApp:
-    def __init__(self, ai_model=None, image_processor=None):
-        self.photo_uploaded = PhotoUploadStatus.NOT_UPLOADED
-        self.photo_validated = PhotoValidationStatus.NOT_VALIDATED
-        self.photo_preprocessed = PhotoPreprocessingStatus.NOT_VALIDATED
-        self.prediction_done = PredictionStatus.NOT_DONE
-        self.recommendation_generated = RecommendationStatus.NOT_GENERATED
-        self.terms_accepted = TermsAccepted.NOT_ACCEPTED
-
-        self.predicted_type = None
-        self.current_image = None
+    def __init__(self, ai_model, image_processor):
+        self.gdpr_accepted = gr.State(False)
         self.ai_model = ai_model
         self.image_processor = image_processor
-    
-    def show_uploaded_image(self, image: np.ndarray):
-        if image is None:
-            return None
-        return image
-    
-    def get_ui_state(self) -> dict:
-        """Get current UI state for conditional rendering"""
-        return {
-            'show_analyze_button': self.photo_validated == PhotoValidationStatus.VALIDATED,
-            'show_results': self.prediction_done == PredictionStatus.DONE,
-            'show_upload_status': self.photo_uploaded == PhotoUploadStatus.UPLOADED,
-            'enable_interactions': self.photo_uploaded == PhotoUploadStatus.UPLOADED
-        }
+        self.build_ui()
 
+    def build_ui(self):
+        with gr.Blocks() as self.demo:
+            # GDPR Modal
+            self.gdpr_modal, self.accept_btn, self.decline_btn, self.gdpr_message = (
+                self.build_gdpr_modal()
+            )
+
+            # Main App (hidden initially)
+            with gr.Group(visible=False) as self.main_app:
+
+                # 1️⃣ Build result section FIRST
+                (
+                    self.result_message,
+                    self.primary_color,
+                    self.secondary_color,
+                    self.accent_color,
+                    self.recommendations,
+                ) = self.build_prediction_result_section()
+
+                # 2️⃣ Build image upload section
+                (
+                    self.img_input,
+                    self.status_message,
+                    self.img_preview,
+                    self.analyze_button,
+                    self.progress_bar,
+                ) = self.build_photo_upload_section()
+
+                # 3️⃣ NOW wire button (components exist!)
+                # ✅ SHOW analyze button when image is uploaded
+                self.img_input.change(
+                    fn=self.on_image_uploaded,
+                    inputs=[self.img_input],
+                    outputs=[
+                        self.analyze_button,
+                        self.status_message,
+                        self.img_preview,
+                    ],
+                )
+                self.analyze_button.click(
+                    fn=self.run_prediction,
+                    inputs=[self.img_input],
+                    outputs=[
+                        self.status_message,
+                        self.primary_color,
+                        self.secondary_color,
+                        self.accent_color,
+                        self.recommendations,
+                        self.analyze_button,
+                    ],
+                )
+            self.accept_btn.click(
+                fn=self.accept_gdpr,
+                inputs=[],
+                outputs=[self.gdpr_modal, self.main_app, self.gdpr_accepted]
+            )
+
+            self.decline_btn.click(
+                fn=self.decline_gdpr,
+                inputs=[],
+                outputs=[self.gdpr_message]
+            )
+
+        return self.demo
     
-    def show_uploaded_image(self, image: np.ndarray):
-        """
-        Process and validate uploaded image with state updates.
-        """
-        if image is None:
-            self.photo_uploaded = PhotoUploadStatus.NOT_UPLOADED
-            self.photo_validated = PhotoValidationStatus.NOT_VALIDATED
-            self.prediction_done = PredictionStatus.NOT_DONE
-            self.processor = None
-            
-            # Return UI updates: image, status, button visibility, results visibility
-            return None, "No image uploaded", gr.update(visible=False), gr.update(visible=False)
-        
-        # Create processor and validate
-        self.processor = PCOAImageProcessor(image)
-        is_valid, message, processed_image = self.processor.validate_image(image)
-        
-        if is_valid:
-            self.photo_uploaded = PhotoUploadStatus.UPLOADED
-            self.photo_validated = PhotoValidationStatus.VALIDATED
-            self.current_image = processed_image
-            
-            # Return: processed image, status message, show analyze button, hide results
+    def on_image_uploaded(self, img):
+        if img is None:
             return (
-                processed_image, 
-                f"✅ {message}", 
-                gr.update(visible=True, interactive=True),  # analyze button
-                gr.update(visible=False)  # results section
+                gr.update(visible=False),  # analyze_button
+                gr.update(value="Please upload an image to begin analysis", visible=True),
+                gr.update(visible=False),  # img_preview
             )
-        else:
-            self.photo_uploaded = PhotoUploadStatus.NOT_UPLOADED
-            self.photo_validated = PhotoValidationStatus.NOT_VALIDATED
-            
-            # Return: no image, error message, hide analyze button, hide results
-            return (
-                None, 
-                f"❌ {message}", 
-                gr.update(visible=False), 
-                gr.update(visible=False)
-            )
+
+        return (
+            gr.update(visible=True),   # analyze_button
+            gr.update(value="Image uploaded. Ready to analyze!", visible=True),
+            gr.update(value=img, visible=True),  # img_preview
+        )
+
+       
+
+    def build_gdpr_modal(self):
+        with gr.Group(visible=True) as gdpr_modal:
+            gr.Markdown("## 🔒 Privacy & Data Protection Notice")
+            gr.Markdown("""
+            **Personal Color Analysis System – GDPR Compliance**
+
+            By using this application, you acknowledge and agree to the following:
+
+            **Data Processing:**
+            - Photos are processed locally for color analysis only
+            - Images are not permanently stored
+            - No third-party data sharing
+            - Data is cleared when the session ends
+            - You consent to image processing for analysis
+
+            **Your Rights:**
+            - Stop using the service at any time
+            - Request deletion of your data
+            - Right to data portability
+
+            **Contact:** your-email@domain.com
+            """)
+
+            gdpr_message = gr.Markdown("", visible=False)
+
+            with gr.Row():
+                decline_btn = gr.Button("❌ Decline", variant="secondary", size="lg")
+                accept_btn = gr.Button("✅ Accept & Continue", variant="primary", size="lg")
+
+        return gdpr_modal, accept_btn, decline_btn, gdpr_message
+
+    # Accept button logic
+    def accept_gdpr(self):
+        return (
+            gr.update(visible=False),  # hide GDPR modal
+            gr.update(visible=True),   # show main app
+            True                       # set GDPR accepted state
+        )
+
+    # Decline button logic
+    def decline_gdpr(self):
+        return gr.update(
+            value="❌ You must accept the privacy policy to use this app.",
+            visible=True
+        )
+    
+    def build_photo_upload_section(self):
+        gr.Markdown("# 🎨 Personal Color Analysis System")
+        gr.Markdown("Upload your photo to discover your personal color palette!")
+        # Image upload section
+        img_input = gr.Image(
+            label="📸 Upload Your Photo",
+            type="numpy",
+            height=400
+        )
+        
+        # Status message
+        status_message = gr.Markdown(
+            value="Please upload an image to begin analysis",
+            visible=True
+        )
+        
+        # Image preview
+        img_preview = gr.Image(
+            label="✨ Processed Image",
+            interactive=False,
+            visible=False,
+            height=300
+        )
+        
+        # Analyze button (initially hidden)
+        analyze_button = gr.Button(
+            "🔍 Analyze My Colors",
+            variant="primary",
+            visible=False,
+            size="lg"
+        )
+        
+        # Progress indicator
+        progress_bar = gr.Progress()
+
+        return img_input, status_message, img_preview, analyze_button, progress_bar
     
     def run_prediction(self, image: np.ndarray, progress=gr.Progress()):
         """Full prediction logic with state management and progress tracking."""
         print("Running prediction...")
-        if not self.processor or not self.photo_validated:
+        if not self.image_processor:
             print("No valid image to process.")
             return (
                 "❌ Please upload and validate an image first.",
@@ -94,12 +195,12 @@ class PCOAApp:
             
             # Preprocess image if needed
             progress(0.3, desc="Processing image...")
-            self.processor.preprocess_image(image)
+            self.image_processor.preprocess_image(image)
             
             # Run color analysis
             progress(0.6, desc="Analyzing colors...")
-            result = self.ai_model.predict(self.processor.get_image())
-            
+            result = self.ai_model.predict(self.image_processor.get_image())
+
             # Update state
             progress(0.8, desc="Generating recommendations...")
             self.prediction_done = PredictionStatus.DONE
@@ -159,118 +260,32 @@ class PCOAApp:
             ColorType.WINTER: "**Best Colors:** True red, royal blue, emerald green, black, pure white\n**Avoid:** Orange, golden yellow, warm colors\n**Metals:** Silver and platinum jewelry"
         }
         return recommendations.get(season, "Consult with a color analyst for personalized recommendations.")
+    
+    def build_prediction_result_section(self):
+        gr.Markdown("## 🎨 Your Color Analysis Results")
+
+        result_message = gr.Markdown("", visible=False)
+
+        primary_color = gr.ColorPicker(label="Primary Color", interactive=False)
+        secondary_color = gr.ColorPicker(label="Secondary Color", interactive=False)
+        accent_color = gr.ColorPicker(label="Accent Color", interactive=False)
+
+        recommendations = gr.Markdown("", visible=False)
+
+        return (
+            result_message,
+            primary_color,
+            secondary_color,
+            accent_color,
+            recommendations,
+        )
+
+    
 
 
-    def build_ui(self):
-        """Build and return the Gradio interface"""
-        with gr.Blocks(theme=gr.themes.Soft()) as demo:
-            
-            state = gr.State(self)
 
-            # GDPR Disclaimer Modal (simpler approach)
-            with gr.Group(visible=True) as gdpr_modal:
-                gr.Markdown("## 🔒 Privacy & Data Protection Notice")
-                gr.Markdown("""
-                **Personal Color Analysis System - GDPR Compliance**
-                
-                By using this application, you acknowledge and agree to the following:
-                
-                **Data Processing:**
-                - Your uploaded photos are processed locally for color analysis purposes only
-                - Images are temporarily stored in memory during analysis and are not saved permanently
-                - Your images and analysis results are not shared with third parties
-                - All data is cleared when you close the application
-                - You consent to the processing of your image data for color analysis
-                
-                **Your Rights:**
-                - You can stop using the service at any time
-                - You can request deletion of your data (contact us if needed)
-                - You have the right to data portability
-                
-                **Contact:** For privacy concerns, contact [your-email@domain.com]
-                """)
-                
-                gdpr_message = gr.Markdown("", visible=False)
-                
-                with gr.Row():
-                    decline_btn = gr.Button("❌ Decline", variant="secondary", size="lg")
-                    accept_btn = gr.Button("✅ Accept & Continue", variant="primary", size="lg")
-
-                # if decline button clicked, close app
-                decline_btn.click(
-                    fn=lambda: exit(),
-                    inputs=[],
-                    outputs=[])
-
-
-            gr.Markdown("# 🎨 Personal Color Analysis System")
-            gr.Markdown("Upload your photo to discover your personal color palette!")
-
-            with gr.Row():
-                with gr.Column(scale=1):
-                    # Image upload section
-                    img_input = gr.Image(
-                        label="📸 Upload Your Photo",
-                        type="numpy",
-                        height=400
-                    )
-                    
-                    # Status message
-                    status_message = gr.Markdown(
-                        value="Please upload an image to begin analysis",
-                        visible=True
-                    )
-                    
-                    # Image preview
-                    img_preview = gr.Image(
-                        label="✨ Processed Image",
-                        interactive=False,
-                        visible=False,
-                        height=300
-                    )
-                    
-                    # Analyze button (initially hidden)
-                    analyze_button = gr.Button(
-                        "🔍 Analyze My Colors",
-                        variant="primary",
-                        visible=False,
-                        size="lg"
-                    )
-                    
-                    # Progress indicator
-                    progress_bar = gr.Progress()
-
-                with gr.Column(scale=1):
-                    # Results section (initially hidden)
-                    with gr.Group(visible=False) as results_section:
-                        gr.Markdown("## 🎨 Your Color Analysis Results")
-                        
-                        result_text = gr.Markdown()
-                        
-                        gr.Markdown("### Your Recommended Colors:")
-                        with gr.Row():
-                            color1 = gr.ColorPicker(label="Primary Color", interactive=False)
-                            color2 = gr.ColorPicker(label="Secondary Color", interactive=False)
-                            color3 = gr.ColorPicker(label="Accent Color", interactive=False)
-                        
-                        # Additional recommendations
-                        gr.Markdown("### Style Recommendations")
-                        recommendations = gr.Markdown()
-            
-            # Event handlers with state management
-            img_input.change(
-                fn=lambda img, app: app.show_uploaded_image(img),
-                inputs=[img_input, state],
-                outputs=[img_preview, status_message, analyze_button, results_section]
-            )
-
-            analyze_button.click(
-                fn=lambda img, app: app.run_prediction(img),
-                inputs=[img_input, state],
-                outputs=[result_text, results_section, color1, color2, color3, recommendations, analyze_button]
-            )
-
-        return demo
+    def _launch(self):
+        self.demo.launch()
     
 
 

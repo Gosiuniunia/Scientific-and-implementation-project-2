@@ -7,4 +7,4 @@ if __name__ == "__main__":
     ai_model = ColorAnalysisModel()
     image_processor = PCOAImageProcessor(None)
     app = PCOAApp(ai_model=ai_model, image_processor=image_processor)
-    app.build_ui().launch()
+    app._launch()
