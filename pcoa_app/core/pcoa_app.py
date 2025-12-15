@@ -28,15 +28,23 @@ class PCOAApp:
                     self.analyze_button,
                     self.progress_bar,
                 ) = self.build_photo_upload_section()
+                # 1️⃣ Wrap result section in a Group and hide it initially
+                with gr.Group(visible=False) as self.results_section:
+                    self.result_message = gr.Markdown("", visible=False)
+                    self.primary_color = gr.ColorPicker(label="Primary Color", interactive=False)
+                    self.secondary_color = gr.ColorPicker(label="Secondary Color", interactive=False)
+                    self.accent_color = gr.ColorPicker(label="Accent Color", interactive=False)
+                    self.recommendations = gr.Markdown("", visible=False)
 
-                # 1️⃣ Build result section
-                (
-                    self.result_message,
-                    self.primary_color,
-                    self.secondary_color,
-                    self.accent_color,
-                    self.recommendations,
-                ) = self.build_prediction_result_section()
+
+                # # 1️⃣ Build result section
+                # (
+                #     self.result_message,
+                #     self.primary_color,
+                #     self.secondary_color,
+                #     self.accent_color,
+                #     self.recommendations,
+                # ) = self.build_prediction_result_section()
 
                 # 3️⃣ NOW wire button (components exist!)
                 # ✅ SHOW analyze button when image is uploaded
@@ -59,6 +67,7 @@ class PCOAApp:
                         self.accent_color,
                         self.recommendations,
                         self.analyze_button,
+                        self.results_section
                     ],
                 )
             self.accept_btn.click(
@@ -182,7 +191,8 @@ class PCOAApp:
                 gr.update(visible=False),  # results section
                 None, None, None,  # color pickers
                 "",  # recommendations
-                gr.update(interactive=True)  # re-enable button
+                gr.update(interactive=True),  # re-enable button
+                gr.update(visible=False)  # results section
             )
         
         try:
@@ -214,7 +224,8 @@ class PCOAApp:
                 color_palette[1],  # secondary color
                 color_palette[2],  # accent color
                 recommendations,   # recommendations
-                gr.update(interactive=True)  # analyze_button
+                gr.update(interactive=True),  # analyze_button
+                gr.update(visible=True)  # results section
             )
 
             
