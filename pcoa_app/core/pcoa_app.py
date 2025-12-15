@@ -2,7 +2,6 @@ import numpy as np
 import gradio as gr
 from core.pcoa_image_preprocessing import PCOAImageProcessor
 
-
 class PCOAApp:
     def __init__(self, ai_model, image_processor):
         self.gdpr_accepted = gr.State(False)
@@ -21,16 +20,6 @@ class PCOAApp:
 
             # Main App (hidden initially)
             with gr.Group(visible=False) as self.main_app:
-
-                # 1️⃣ Build result section FIRST
-                (
-                    self.result_message,
-                    self.primary_color,
-                    self.secondary_color,
-                    self.accent_color,
-                    self.recommendations,
-                ) = self.build_prediction_result_section()
-
                 # 2️⃣ Build image upload section
                 (
                     self.img_input,
@@ -39,6 +28,15 @@ class PCOAApp:
                     self.analyze_button,
                     self.progress_bar,
                 ) = self.build_photo_upload_section()
+
+                # 1️⃣ Build result section
+                (
+                    self.result_message,
+                    self.primary_color,
+                    self.secondary_color,
+                    self.accent_color,
+                    self.recommendations,
+                ) = self.build_prediction_result_section()
 
                 # 3️⃣ NOW wire button (components exist!)
                 # ✅ SHOW analyze button when image is uploaded
