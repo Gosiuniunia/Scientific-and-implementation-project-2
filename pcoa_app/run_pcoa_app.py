@@ -1,9 +1,10 @@
 from utils.enums import *
-from core.pcoa_app import PCOAApp, build_ui
+from core.pcoa_app import PCOAApp
 from core.pcoa_ai_model import ColorAnalysisModel
+from core.pcoa_image_preprocessing import PCOAImageProcessor
 
 if __name__ == "__main__":
-    app = PCOAApp()
-    ui = build_ui(app)
-    model = ColorAnalysisModel()
-    ui.launch()
+    ai_model = ColorAnalysisModel()
+    image_processor = PCOAImageProcessor(None)
+    app = PCOAApp(ai_model=ai_model, image_processor=image_processor)
+    app.build_ui().launch()

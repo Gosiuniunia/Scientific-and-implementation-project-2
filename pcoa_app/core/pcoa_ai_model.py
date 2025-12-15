@@ -65,7 +65,6 @@ class ColorAnalysisModel:
         # tutaj zaimplementuj jak model robi predykcję
         predicted_class_id = np.random.randint(0, len(self.classes))
         confidence = np.random.uniform(0.75, 0.98)
-
         predicted_season = self.classes[predicted_class_id]
         return predicted_season, confidence
 

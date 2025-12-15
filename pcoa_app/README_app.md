@@ -3,7 +3,7 @@
 ```bash
 git clone https://github.com/Gosiuniunia/Scientific-and-implementation-project-2.git
 cd pcoa_app
-source .venv/Scripts/activate
+source .venv/bin/activate
 python3 -m pip install app_requirements.txt
 python3 run_pcoa_app.py
 ```

@@ -26,3 +26,13 @@ class PhotoValidationStatus(Enum):
 class PhotoPreprocessingStatus(Enum):
     NOT_VALIDATED = 0
     VALIDATED = 1
+
+@unique 
+class RecommendationStatus(Enum):
+    NOT_GENERATED = 0
+    GENERATED = 1
+
+@unique 
+class TermsAccepted(Enum):
+    NOT_ACCEPTED = 0
+    ACCEPTED = 1
