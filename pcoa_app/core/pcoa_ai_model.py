@@ -13,49 +13,17 @@ class ColorAnalysisModel:
         }
         
         self.color_palettes = {
-            "Spring": {
-                "colors": ["#FFB6C1", "#FFDAB9", "#98FB98", "#87CEEB", "#F0E68C", "#FFE4B5", "#DDA0DD", "#F5DEB3"],
-                "description": "Warm, bright, and clear colors with yellow undertones"
-            },
-            "Summer": {
-                "colors": ["#B0C4DE", "#E6E6FA", "#F0F8FF", "#D8BFD8", "#FFB6D9", "#C1E1C1", "#B0E0E6", "#FADADD"],
-                "description": "Cool, soft, and muted colors with blue undertones"
-            },
-            "Autumn": {
-                "colors": ["#D2691E", "#CD853F", "#B8860B", "#8B4513", "#A0522D", "#BC8F8F", "#DAA520", "#556B2F"],
-                "description": "Warm, rich, and earthy colors with golden undertones"
-            },
-            "Winter": {
-                "colors": ["#000000", "#FFFFFF", "#DC143C", "#4169E1", "#8B008B", "#2F4F4F", "#FF1493", "#191970"],
-                "description": "Cool, vivid, and high-contrast colors with blue undertones"
-            }
+            "Spring": ["#FFB6C1", "#FFDAB9", "#98FB98", "#87CEEB", "#F0E68C", "#FFE4B5", "#DDA0DD", "#F5DEB3"],
+            "Summer": ["#B0C4DE", "#E6E6FA", "#F0F8FF", "#D8BFD8", "#FFB6D9", "#C1E1C1", "#B0E0E6", "#FADADD"],
+            "Autumn": ["#D2691E", "#CD853F", "#B8860B", "#8B4513", "#A0522D", "#BC8F8F", "#DAA520", "#556B2F"],
+            "Winter": ["#000000", "#FFFFFF", "#DC143C", "#4169E1", "#8B008B", "#2F4F4F", "#FF1493", "#191970"]
         }
         
         self.recommendations = {
-            "Spring": [
-                "Wear warm, bright colors like peach, coral, and warm pink",
-                "Avoid dark, heavy colors that can overwhelm your natural brightness",
-                "Gold jewelry complements your warm undertones better than silver",
-                "Choose clear, vibrant shades over muted tones"
-            ],
-            "Summer": {
-                "Wear soft, cool colors like lavender, soft pink, and powder blue",
-                "Avoid warm, golden tones that clash with your cool undertones",
-                "Silver and white gold jewelry suit you best",
-                "Choose muted, dusty shades over bright, vivid colors"
-            },
-            "Autumn": [
-                "Wear warm, earthy colors like rust, olive, and camel",
-                "Avoid icy, bright colors that can wash you out",
-                "Gold and bronze jewelry enhance your warm coloring",
-                "Choose rich, muted tones over pastel shades"
-            ],
-            "Winter": [
-                "Wear cool, vivid colors like true red, royal blue, and pure white",
-                "Avoid warm, muted colors that can make you look dull",
-                "Silver and platinum jewelry complement your cool undertones",
-                "Choose high-contrast combinations and jewel tones"
-            ]
+            "Spring": "Wear warm, bright colors like peach, coral, and warm pink, \n Avoid dark, heavy colors that can overwhelm your natural brightness, \n Gold jewelry complements your warm undertones better than silver, \nChoose clear, vibrant shades over muted tones",
+            "Summer": "Wear soft, cool colors like lavender, soft pink, and powder blue, \n Avoid warm, golden tones that clash with your cool undertones, \nSilver and white gold jewelry suit you best, \nChoose muted, dusty shades over bright, vivid colors, \n Choose muted, dusty shades over bright, vivid colors",
+            "Autumn": "Wear warm, earthy colors like rust, olive, and camel, \n Avoid icy, bright colors that can wash you out, \nGold and bronze jewelry enhance your warm coloring, \nChoose rich, muted tones over pastel shades, \nGold and bronze jewelry enhance your warm coloring, \nChoose rich, muted tones over pastel shades",
+            "Winter": "Wear cool, vivid colors like true red, royal blue, and pure white, \nAvoid warm, muted colors that can make you look dull, \nSilver and platinum jewelry complement your cool undertones, \nChoose high-contrast combinations and jewel tones"
         }
     
     def predict(self, features):
@@ -70,7 +38,7 @@ class ColorAnalysisModel:
         return self.color_palettes.get(season)
 
     def get_recommendations(self, season):
-        return self.recommendations.get(season, [])
+        return self.recommendations.get(season)
     
     def create_color_palette_image(self, season):
         colors = self.color_palettes[season]["colors"]

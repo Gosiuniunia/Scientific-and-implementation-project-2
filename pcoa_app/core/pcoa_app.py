@@ -1,12 +1,13 @@
 import numpy as np
 import gradio as gr
-from utils.enums import *
 from core.pcoa_image_preprocessing import PCOAImageProcessor
 
 
 class PCOAApp:
     def __init__(self, ai_model, image_processor):
         self.gdpr_accepted = gr.State(False)
+        self.prediction_done = gr.State(False)
+        self.predicted_type = gr.State(None)
         self.ai_model = ai_model
         self.image_processor = image_processor
         self.build_ui()
@@ -89,8 +90,6 @@ class PCOAApp:
             gr.update(value="Image uploaded. Ready to analyze!", visible=True),
             gr.update(value=img, visible=True),  # img_preview
         )
-
-       
 
     def build_gdpr_modal(self):
         with gr.Group(visible=True) as gdpr_modal:
@@ -193,34 +192,33 @@ class PCOAApp:
             # Disable button during processing
             progress(0.1, desc="Starting analysis...")
             
-            # Preprocess image if needed
-            progress(0.3, desc="Processing image...")
-            self.image_processor.preprocess_image(image)
-            
             # Run color analysis
             progress(0.6, desc="Analyzing colors...")
-            result = self.ai_model.predict(self.image_processor.get_image())
+            result = self.ai_model.predict(self.image_processor.get_image())[0]
 
             # Update state
             progress(0.8, desc="Generating recommendations...")
-            self.prediction_done = PredictionStatus.DONE
+            self.prediction_done = gr.State(True)
             self.predicted_type = result
             
             # Get color palette and recommendations
-            color_palette = self.get_season_colors(result)
-            recommendations = self.get_style_recommendations(result)
+            color_palette = self.ai_model.get_palette_info(result)
+            recommendations = self.ai_model.get_recommendations(result)
             
             progress(1.0, desc="Analysis complete!")
             
             return (
-                f"🎨 **Your Personal Color Type: {result}**\n\n{self.get_season_description(result)}",
-                gr.update(visible=True),  # show results section
+                gr.update(
+                    value=f"🎨 **Your Personal Color Type: {result}**\n\n{self.ai_model.get_recommendations(result)}",
+                    visible=True
+                ),               # status_message
                 color_palette[0],  # primary color
                 color_palette[1],  # secondary color
                 color_palette[2],  # accent color
-                recommendations,   # style recommendations
-                gr.update(interactive=True)  # re-enable button
+                recommendations,   # recommendations
+                gr.update(interactive=True)  # analyze_button
             )
+
             
         except Exception as e:
             print(f"Error during prediction: {str(e)}")
@@ -231,41 +229,10 @@ class PCOAApp:
                 gr.update(interactive=True)  # re-enable button
             )
     
-    def get_season_colors(self, season: ColorType) -> list:
-        """Get representative colors for each season"""
-        season_palettes = {
-            ColorType.SPRING: ["#FF6B6B", "#4ECDC4", "#45B7D1"],  # Warm, bright colors
-            ColorType.SUMMER: ["#96CEB4", "#FFEAA7", "#DDA0DD"],  # Cool, soft colors  
-            ColorType.AUTUMN: ["#D63031", "#E17055", "#FDCB6E"],  # Warm, muted colors
-            ColorType.WINTER: ["#2D3436", "#0984E3", "#E84393"]   # Cool, clear colors
-        }
-        return season_palettes.get(season, ["#808080", "#A0A0A0", "#C0C0C0"])
-    
-    def get_season_description(self, season: ColorType) -> str:
-        """Get detailed description for each season"""
-        descriptions = {
-            ColorType.SPRING: "You have warm undertones with bright, clear coloring. Spring types look best in warm, vibrant colors that complement their natural radiance.",
-            ColorType.SUMMER: "You have cool undertones with soft, muted coloring. Summer types shine in cool, gentle colors that enhance their natural elegance.",
-            ColorType.AUTUMN: "You have warm undertones with rich, deep coloring. Autumn types look stunning in warm, earthy colors that match their natural depth.",
-            ColorType.WINTER: "You have cool undertones with high contrast coloring. Winter types excel in cool, bold colors that complement their striking features."
-        }
-        return descriptions.get(season, "Your unique coloring has been analyzed.")
-    
-    def get_style_recommendations(self, season: ColorType) -> str:
-        """Get style recommendations for each season"""
-        recommendations = {
-            ColorType.SPRING: "**Best Colors:** Coral, peach, golden yellow, bright green, clear blue\n**Avoid:** Black, pure white, dark colors\n**Metals:** Gold jewelry works best",
-            ColorType.SUMMER: "**Best Colors:** Soft pink, lavender, powder blue, sage green, soft gray\n**Avoid:** Orange, bright yellow, warm colors\n**Metals:** Silver jewelry is ideal",
-            ColorType.AUTUMN: "**Best Colors:** Rust, olive green, golden brown, deep orange, warm red\n**Avoid:** Pink, icy colors, cool tones\n**Metals:** Gold and copper jewelry",
-            ColorType.WINTER: "**Best Colors:** True red, royal blue, emerald green, black, pure white\n**Avoid:** Orange, golden yellow, warm colors\n**Metals:** Silver and platinum jewelry"
-        }
-        return recommendations.get(season, "Consult with a color analyst for personalized recommendations.")
-    
     def build_prediction_result_section(self):
         gr.Markdown("## 🎨 Your Color Analysis Results")
 
         result_message = gr.Markdown("", visible=False)
-
         primary_color = gr.ColorPicker(label="Primary Color", interactive=False)
         secondary_color = gr.ColorPicker(label="Secondary Color", interactive=False)
         accent_color = gr.ColorPicker(label="Accent Color", interactive=False)
@@ -279,10 +246,6 @@ class PCOAApp:
             accent_color,
             recommendations,
         )
-
-    
-
-
 
     def _launch(self):
         self.demo.launch()
