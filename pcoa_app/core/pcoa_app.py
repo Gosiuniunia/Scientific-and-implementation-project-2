@@ -2,11 +2,15 @@ import numpy as np
 import gradio as gr
 from core.pcoa_image_preprocessing import PCOAImageProcessor
 
+# added so Iphone HEIC images don't crash the app
+from pillow_heif import register_heif_opener
+register_heif_opener()
+
 class PCOAApp:
     def __init__(self, ai_model, image_processor):
         self.gdpr_accepted = gr.State(False)
         self.prediction_done = gr.State(False)
-        self.predicted_type = gr.State(None)
+        self.predicted_type = gr.State("")
         self.ai_model = ai_model
         self.image_processor = image_processor
         self.build_ui()
@@ -17,7 +21,6 @@ class PCOAApp:
             self.gdpr_modal, self.accept_btn, self.decline_btn, self.gdpr_message = (
                 self.build_gdpr_modal()
             )
-
             # Main App (hidden initially)
             with gr.Group(visible=False) as self.main_app:
                 # Create a horizontal layout with two columns
@@ -28,6 +31,7 @@ class PCOAApp:
                             self.img_input,
                             self.status_message,
                             self.analyze_button,
+                            self.submit_image_button,
                             self.progress_bar,
                         ) = self.build_photo_upload_section()
 
@@ -46,9 +50,19 @@ class PCOAApp:
                     inputs=[self.img_input],
                     outputs=[
                         self.analyze_button,
+                        self.submit_image_button,
                         self.status_message,
                     ],
                 )
+
+            self.submit_image_button.click(
+                fn=self.on_image_submitted,
+                inputs=[self.img_input],
+                outputs=[
+                    self.status_message,
+                    self.analyze_button,
+                    self.submit_image_button],
+            )
 
             self.analyze_button.click(
                 fn=self.run_prediction,
@@ -79,21 +93,47 @@ class PCOAApp:
             )
 
         return self.demo
-
     
     def on_image_uploaded(self, img):
         if img is None:
             return (
                 gr.update(visible=False),  # analyze_button
+                gr.update(visible=True), # submit button
                 gr.update(value="Please upload an image to begin analysis", visible=True),
-                # gr.update(visible=False),  # img_preview
             )
 
         return (
-            gr.update(visible=True),   # analyze_button
-            gr.update(value="Image uploaded. Ready to analyze!", visible=True),
-            # gr.update(value=img, visible=True),  # img_preview
+            gr.update(visible=False),   # analyze_button
+            gr.update(visible=True),  # submit button
+            gr.update(value="Image uploaded. Click Submit to validate", visible=True),
         )
+    
+    def on_image_submitted(self, img):
+        if img is None:
+            return (
+                gr.update(value="❌ Please upload an image first", visible=True),
+                gr.update(visible=False),  # analyze_button
+                gr.update(visible=True),   # submit button
+            )
+        
+        else:
+            # validate 
+            print(f"Submitting image for validation: {img}")
+            is_valid, message, numpy_image = self.image_processor.validate_image(img)
+            if not is_valid:
+                return (
+                    gr.update(value=f"❌ {message}", visible=True),
+                    gr.update(visible=False),  # analyze_button
+                    gr.update(visible=True),   # submit button
+                )
+            # if image is valued, set it in the processor
+            self.image_processor.set_image(numpy_image)
+
+            return (
+                gr.update(value="✅ Image was valid and got submitted successfully! You can now analyze your colors.", visible=True),
+                gr.update(visible=True),   # analyze_button
+                gr.update(visible=False),  # submit button
+            )
 
     def build_gdpr_modal(self):
         with gr.Group(visible=True) as gdpr_modal:
@@ -147,7 +187,8 @@ class PCOAApp:
         # Image upload section
         img_input = gr.Image(
             label="📸 Upload Your Photo",
-            type="numpy",
+            type='filepath',
+            # type="numpy",
             height=400,
             # app requirement - user can upload image or take photo with webcam
             sources=['upload', 'webcam']
@@ -155,8 +196,16 @@ class PCOAApp:
         
         # Status message
         status_message = gr.Markdown(
-            value="Please upload an image to begin analysis",
+            value="Please upload an image in *.jpg* or *.png* format to begin analysis.",
             visible=True
+        )
+
+        # Image submission button
+        submit_image_button = gr.Button(
+            "📤 Submit Image",
+            variant="secondary",
+            visible=False,
+            size="lg"
         )
         
         
@@ -171,31 +220,31 @@ class PCOAApp:
         # Progress indicator
         progress_bar = gr.Progress()
 
-        return img_input, status_message, analyze_button, progress_bar
+        return img_input, status_message, analyze_button, submit_image_button, progress_bar
     
     def run_prediction(self, image: np.ndarray, progress=gr.Progress()):
+        """Run prediction pipeline and update UI elements accordingly"""
         try:
-            if image is None or not self.image_processor:
-                return (
-                    gr.update(
-                        value="❌ Please upload a valid image first.",
-                        visible=True
-                    ),
-                    None, None, None, "",              # color pickers + recommendations
-                    gr.update(interactive=True),       # analyze button
-                    gr.update(visible=False)           # result_message hidden
-                )
 
             # Mock progress
             progress(0.1, desc="Starting analysis...")
-            result = self.ai_model.predict(self.image_processor.get_image())
+
+            # Run white-balancing
+            progress(0.3, desc="Preprocessing image...")
+            preprocessed_image = self.image_processor.preprocess_image(
+                self.image_processor.get_image()
+            )
+            self.image_processor.set_image(preprocessed_image)
+
+
+            result = self.ai_model.predict(self.image_processor.get_image())[0]
 
             # Safely get palette
             color_palette = self.ai_model.get_palette_info(result)
             if not color_palette or len(color_palette) < 3:
                 color_palette = ["#808080", "#A0A0A0", "#C0C0C0"]  # fallback
 
-            recommendations = self.ai_model.get_recommendations(result)
+            recommendations = self.ai_model.get_description(result)
 
             # Update state properly
             self.prediction_done.value = True
@@ -229,6 +278,7 @@ class PCOAApp:
                 None, None, None,
                 "",
                 gr.update(interactive=True),
+                gr.update(visible=False),
                 gr.update(visible=False)
             )
 

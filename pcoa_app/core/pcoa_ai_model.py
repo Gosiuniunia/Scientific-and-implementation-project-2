@@ -2,6 +2,7 @@ import numpy as np
 import gradio as gr
 from PIL import Image, ImageDraw
 import io
+import time
 
 class ColorAnalysisModel:
     def __init__(self):
@@ -39,16 +40,20 @@ class ColorAnalysisModel:
         predicted_class_id = np.random.randint(0, len(self.classes))
         confidence = np.random.uniform(0.75, 0.98)
         predicted_season = self.classes[predicted_class_id]
+        time.sleep(2)
         return predicted_season, confidence
 
     def get_palette_info(self, season):
         return self.color_palettes.get(season)
 
-    def get_recommendations(self, season):
+    def get_description(self, season):
         return self.descriptions.get(season)
     
+    def get_jewelery_recommendation(self, season):
+        return self.jewelery_recommendations.get(season)
+    
     def create_color_palette_image(self, season):
-        colors = self.color_palettes[season]["colors"]
+        colors = self.color_palettes[season]
         
         # Create image with color swatches
         swatch_size = 100
@@ -75,5 +80,5 @@ class ColorAnalysisModel:
                 outline='#CCCCCC',
                 width=2
             )
-        
+
         return img
