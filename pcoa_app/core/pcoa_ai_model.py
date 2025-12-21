@@ -13,17 +13,24 @@ class ColorAnalysisModel:
         }
         
         self.color_palettes = {
-            "Spring": ["#FFB6C1", "#FFDAB9", "#98FB98", "#87CEEB", "#F0E68C", "#FFE4B5", "#DDA0DD", "#F5DEB3"],
-            "Summer": ["#B0C4DE", "#E6E6FA", "#F0F8FF", "#D8BFD8", "#FFB6D9", "#C1E1C1", "#B0E0E6", "#FADADD"],
-            "Autumn": ["#D2691E", "#CD853F", "#B8860B", "#8B4513", "#A0522D", "#BC8F8F", "#DAA520", "#556B2F"],
-            "Winter": ["#000000", "#FFFFFF", "#DC143C", "#4169E1", "#8B008B", "#2F4F4F", "#FF1493", "#191970"]
+            "Spring": ["#639E3F", "#DF5485", "#DD9A29", "#215380", "#EBDDCC", "#FDAA63", "#008EAA", "#963CBD"],
+            "Summer": ["#EC9AAC", "#6F9987", "#72A8BA", "#9F8B84", "#7A749B", "#F1BDC8", "#9CAF88", "#484A51"],
+            "Autumn": ["#591D2D", "#1A2042", "#143831", "#BE4D00", "#4D9E9A", "#5C462B", "#890C58", "#DAAA00"],
+            "Winter": ["#7A2942", "#5C068C", "#1A3A47", "#20334A", "#341902", "#00594C", "#AA0061", "#0057B8"]
         }
         
-        self.recommendations = {
-            "Spring": "Wear warm, bright colors like peach, coral, and warm pink, \n Avoid dark, heavy colors that can overwhelm your natural brightness, \n Gold jewelry complements your warm undertones better than silver, \nChoose clear, vibrant shades over muted tones",
-            "Summer": "Wear soft, cool colors like lavender, soft pink, and powder blue, \n Avoid warm, golden tones that clash with your cool undertones, \nSilver and white gold jewelry suit you best, \nChoose muted, dusty shades over bright, vivid colors, \n Choose muted, dusty shades over bright, vivid colors",
-            "Autumn": "Wear warm, earthy colors like rust, olive, and camel, \n Avoid icy, bright colors that can wash you out, \nGold and bronze jewelry enhance your warm coloring, \nChoose rich, muted tones over pastel shades, \nGold and bronze jewelry enhance your warm coloring, \nChoose rich, muted tones over pastel shades",
-            "Winter": "Wear cool, vivid colors like true red, royal blue, and pure white, \nAvoid warm, muted colors that can make you look dull, \nSilver and platinum jewelry complement your cool undertones, \nChoose high-contrast combinations and jewel tones"
+        self.descriptions = {
+            "Spring": "Your beauty is bright, warm, and fresh. Light, luminous colors accentuate you best, adding radiance to your complexion. Warm shades are ideal: apricot, coral, golden, light turquoise, mint, or warm beige. Avoid colors that are too cool and muted - they can rob your face of its natural radiance.",
+            "Summer": "Your beauty is delicate, cool, and subtle. You look most beautiful in soft, pastel shades that complement the natural harmony of your features. Cool, smoky colors are best, such as lavender, powder pink, sky blue, dove gray, or cool raspberry. Avoid very bright and vibrant colors - they can overpower your delicate color palette.",
+            "Autumn": "You have a warm, expressive, and deep beauty. Earthy colors suit you perfectly, as they emphasize your natural intensity. You look best in shades like terracotta, olive, mustard, cinnamon, dark green, and warm chocolate. Avoid very cool and neon colors, which can create an unfavorable contrast.",
+            "Winter": "Your beauty is strong, contrasting, and cool. You look best in pure, bold colors that complement the intensity of your features. You look great in snow white, black, fuchsia, cobalt, ruby, and cool emerald. Avoid shades that are too warm or muted - they can weaken your natural contrast."
+        }
+
+        self.jewelery_recommendations = {
+            "Spring": "Jewelry recommended for spring-like individuals includes gold pieces with pastel gemstones, such as peridot or light pink tourmaline, which accentuate the natural vitality of spring tones.",
+            "Summer": "The best jewelry choices for summer-themed individuals include silver and white gold, with gemstones, and electronics like aquamarine and rose quartz. When pairing the season with your outfits, you should incorporate pieces that complement the cool and calm nature of summer tones, creating a harmonious and elegant look.",
+            "Autumn": "The ideal jewelry for autumnal types includes gold and rose gold, as well as gemstones like amber, citrine, and garnet. These choices emphasize the natural warmth and depth of autumnal colors.",
+            "Winter": "Jewelry choices for winter skin tones include platinum or white gold, along with statement gemstones like sapphire and amethyst. You can enhance your winter wardrobe with statement jewelry, choosing statement pieces that will add a touch of luxury and sophistication to your look."
         }
     
     def predict(self, features):
@@ -38,7 +45,7 @@ class ColorAnalysisModel:
         return self.color_palettes.get(season)
 
     def get_recommendations(self, season):
-        return self.recommendations.get(season)
+        return self.descriptions.get(season)
     
     def create_color_palette_image(self, season):
         colors = self.color_palettes[season]["colors"]
