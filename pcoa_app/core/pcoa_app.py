@@ -20,56 +20,52 @@ class PCOAApp:
 
             # Main App (hidden initially)
             with gr.Group(visible=False) as self.main_app:
-                # 2️⃣ Build image upload section
-                (
-                    self.img_input,
-                    self.status_message,
-                    # self.img_preview,
-                    self.analyze_button,
-                    self.progress_bar,
-                ) = self.build_photo_upload_section()
-                # 1️⃣ Wrap result section in a Group and hide it initially
-                with gr.Group(visible=False) as self.results_section:
-                    self.result_message = gr.Markdown("", visible=False)
-                    self.primary_color = gr.ColorPicker(label="Primary Color", interactive=False)
-                    self.secondary_color = gr.ColorPicker(label="Secondary Color", interactive=False)
-                    self.accent_color = gr.ColorPicker(label="Accent Color", interactive=False)
-                    self.recommendations = gr.Markdown("", visible=False)
+                # Create a horizontal layout with two columns
+                with gr.Row():
+                    # Left column: image upload section
+                    with gr.Column(scale=1):
+                        (
+                            self.img_input,
+                            self.status_message,
+                            self.analyze_button,
+                            self.progress_bar,
+                        ) = self.build_photo_upload_section()
 
+                    # Right column: results section (hidden initially)
+                    with gr.Column(scale=1):
+                        with gr.Group(visible=False) as self.results_section:
+                            self.result_message = gr.Markdown("", visible=False)
+                            self.primary_color = gr.ColorPicker(label="Primary Color", interactive=False)
+                            self.secondary_color = gr.ColorPicker(label="Secondary Color", interactive=False)
+                            self.accent_color = gr.ColorPicker(label="Accent Color", interactive=False)
+                            self.recommendations = gr.Markdown("", visible=False)
 
-                # # 1️⃣ Build result section
-                # (
-                #     self.result_message,
-                #     self.primary_color,
-                #     self.secondary_color,
-                #     self.accent_color,
-                #     self.recommendations,
-                # ) = self.build_prediction_result_section()
-
-                # 3️⃣ NOW wire button (components exist!)
-                # ✅ SHOW analyze button when image is uploaded
+                # Show analyze button when image is uploaded
                 self.img_input.change(
                     fn=self.on_image_uploaded,
                     inputs=[self.img_input],
                     outputs=[
                         self.analyze_button,
                         self.status_message,
-                        # self.img_preview,
                     ],
                 )
-                self.analyze_button.click(
-                    fn=self.run_prediction,
-                    inputs=[self.img_input],
-                    outputs=[
-                        self.status_message,
-                        self.primary_color,
-                        self.secondary_color,
-                        self.accent_color,
-                        self.recommendations,
-                        self.analyze_button,
-                        self.results_section
-                    ],
-                )
+
+            self.analyze_button.click(
+                fn=self.run_prediction,
+                inputs=[self.img_input],
+                outputs=[
+                    self.status_message,   # left column: status
+                    self.primary_color,    # right column: color pickers
+                    self.secondary_color,
+                    self.accent_color,
+                    self.recommendations,  # right column: recommendations
+                    self.analyze_button,   # left column: re-enable button
+                    self.result_message,    # right column: prediction text
+                    self.results_section
+                ],
+            )
+            
+            # GDPR buttons
             self.accept_btn.click(
                 fn=self.accept_gdpr,
                 inputs=[],
@@ -83,6 +79,7 @@ class PCOAApp:
             )
 
         return self.demo
+
     
     def on_image_uploaded(self, img):
         if img is None:
@@ -151,7 +148,9 @@ class PCOAApp:
         img_input = gr.Image(
             label="📸 Upload Your Photo",
             type="numpy",
-            height=400
+            height=400,
+            # app requirement - user can upload image or take photo with webcam
+            sources=['upload', 'webcam']
         )
         
         # Status message
@@ -160,13 +159,6 @@ class PCOAApp:
             visible=True
         )
         
-        # Image preview
-        # img_preview = gr.Image(
-        #     label="✨ Processed Image",
-        #     interactive=False,
-        #     visible=False,
-        #     height=300
-        # )
         
         # Analyze button (initially hidden)
         analyze_button = gr.Button(
@@ -180,65 +172,66 @@ class PCOAApp:
         progress_bar = gr.Progress()
 
         return img_input, status_message, analyze_button, progress_bar
-
-        # return img_input, status_message, img_preview, analyze_button, progress_bar
     
     def run_prediction(self, image: np.ndarray, progress=gr.Progress()):
-        """Full prediction logic with state management and progress tracking."""
-        print("Running prediction...")
-        if not self.image_processor:
-            print("No valid image to process.")
-            return (
-                "❌ Please upload and validate an image first.",
-                gr.update(visible=False),  # results section
-                None, None, None,  # color pickers
-                "",  # recommendations
-                gr.update(interactive=True),  # re-enable button
-                gr.update(visible=False)  # results section
-            )
-        
         try:
-            print("Starting analysis...")
-            # Disable button during processing
-            progress(0.1, desc="Starting analysis...")
-            
-            # Run color analysis
-            progress(0.6, desc="Analyzing colors...")
-            result = self.ai_model.predict(self.image_processor.get_image())[0]
+            if image is None or not self.image_processor:
+                return (
+                    gr.update(
+                        value="❌ Please upload a valid image first.",
+                        visible=True
+                    ),
+                    None, None, None, "",              # color pickers + recommendations
+                    gr.update(interactive=True),       # analyze button
+                    gr.update(visible=False)           # result_message hidden
+                )
 
-            # Update state
-            progress(0.8, desc="Generating recommendations...")
-            self.prediction_done = gr.State(True)
-            self.predicted_type = result
-            
-            # Get color palette and recommendations
+            # Mock progress
+            progress(0.1, desc="Starting analysis...")
+            result = self.ai_model.predict(self.image_processor.get_image())
+
+            # Safely get palette
             color_palette = self.ai_model.get_palette_info(result)
+            if not color_palette or len(color_palette) < 3:
+                color_palette = ["#808080", "#A0A0A0", "#C0C0C0"]  # fallback
+
             recommendations = self.ai_model.get_recommendations(result)
-            
+
+            # Update state properly
+            self.prediction_done.value = True
+            self.predicted_type.value = result
+
             progress(1.0, desc="Analysis complete!")
-            
+
             return (
                 gr.update(
-                    value=f"🎨 **Your Personal Color Type: {result}**\n\n{self.ai_model.get_recommendations(result)}",
+                    value="✅ Image analyzed successfully!",
                     visible=True
-                ),               # status_message
-                color_palette[0],  # primary color
-                color_palette[1],  # secondary color
-                color_palette[2],  # accent color
-                recommendations,   # recommendations
-                gr.update(interactive=True),  # analyze_button
-                gr.update(visible=True)  # results section
+                ),                  # status_message (left column)
+                color_palette[0],    # primary color
+                color_palette[1],    # secondary color
+                color_palette[2],    # accent color
+                recommendations,     # recommendations
+                gr.update(interactive=True),  # re-enable button
+                gr.update(
+                    value=f"🎨 **Your Personal Color Type: {result}**\n\n{recommendations}",
+                    visible=True
+                ),  
+                gr.update(visible=True)                   # result_message (right column)
             )
 
-            
         except Exception as e:
-            print(f"Error during prediction: {str(e)}")
             return (
-                f"❌ Analysis failed: {str(e)}",
-                gr.update(visible=False),
-                None, None, None, "",
-                gr.update(interactive=True)  # re-enable button
+                gr.update(
+                    value=f"❌ Analysis failed: {str(e)}",
+                    visible=True
+                ),
+                None, None, None,
+                "",
+                gr.update(interactive=True),
+                gr.update(visible=False)
             )
+
     
     def build_prediction_result_section(self):
         gr.Markdown("## 🎨 Your Color Analysis Results")
