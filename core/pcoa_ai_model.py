@@ -45,7 +45,6 @@ class ColorAnalysisModel:
     
     def predict(self, features):
         """Predict color season from extracted features"""
-        print(f"Features passed to prediction: {features}")
         predicted_season = predict_class(self.model_path, features)
         return predicted_season
 
@@ -55,7 +54,7 @@ class ColorAnalysisModel:
     def get_description(self, season):
         return self.descriptions.get(season)
     
-    def get_jewelery_recommendation(self, season):
+    def get_jewelry_recommendation(self, season):
         return self.jewelery_recommendations.get(season)
     
     def create_color_palette_image(self, season):

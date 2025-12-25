@@ -42,7 +42,8 @@ class PCOAApp:
                             self.primary_color = gr.ColorPicker(label="Primary Color", interactive=False)
                             self.secondary_color = gr.ColorPicker(label="Secondary Color", interactive=False)
                             self.accent_color = gr.ColorPicker(label="Accent Color", interactive=False)
-                            self.recommendations = gr.Markdown("", visible=False)
+                            self.description = gr.Markdown("", visible=False)
+                            self.jewelerly_recommendation = gr.Markdown("", visible=False)
 
                 # Show analyze button when image is uploaded
                 self.img_input.change(
@@ -72,7 +73,8 @@ class PCOAApp:
                     self.primary_color,    # right column: color pickers
                     self.secondary_color,
                     self.accent_color,
-                    self.recommendations,  # right column: recommendations
+                    self.description,  # right column: description
+                    self.jewelerly_recommendation,  # right column: jewerly recommendation
                     self.analyze_button,   # left column: re-enable button
                     self.result_message,    # right column: prediction text
                     self.results_section
@@ -118,8 +120,6 @@ class PCOAApp:
         
         else:
             # validate 
-            print(f"Submitting image for validation: {img}")
-            print(f"Type of img in pcoa app: {type(img)}")
             is_valid, message, numpy_image = self.image_processor.validate_image(img)
             if not is_valid:
                 return (
@@ -266,8 +266,7 @@ class PCOAApp:
             
             if not prediction_results:
                 raise ValueError("Model prediction returned empty list.")
-                
-            # result = prediction_results[0]
+            
             print(f"--- Prediction: SUCCESS (Result: {prediction_results}) ---")
         except Exception as e:
             return handle_error("AI Prediction", e)
@@ -278,7 +277,9 @@ class PCOAApp:
             if not color_palette or len(color_palette) < 3:
                 color_palette = ["#808080", "#A0A0A0", "#C0C0C0"]
                 
-            recommendations = self.ai_model.get_description(prediction_results)
+            description = self.ai_model.get_description(prediction_results)
+            jewelry = self.ai_model.get_jewelry_recommendation(prediction_results)
+            print(f"--- Recommendations Retrieval: SUCCESS ---")
         except Exception as e:
             return handle_error("Data Retrieval", e)
 
@@ -293,38 +294,18 @@ class PCOAApp:
                 color_palette[0],
                 color_palette[1],
                 color_palette[2],
-                recommendations,
+                description,
+                jewelry,
                 gr.update(interactive=True),
                 gr.update(
-                    value=f"🎨 **Your Personal Color Type: {prediction_results}**\n\n{recommendations}",
+                    value=f"🎨 **Your Personal Color Type: {prediction_results}**\n\n{description}**\n\n{jewelry}",
                     visible=True
                 ),
                 gr.update(visible=True)
+                # gr.update(visible=True)
             )
         except Exception as e:
             return handle_error("UI Update", e)
     
-    def build_prediction_result_section(self):
-        gr.Markdown("## 🎨 Your Color Analysis Results")
-
-        result_message = gr.Markdown("", visible=False)
-        primary_color = gr.ColorPicker(label="Primary Color", interactive=False)
-        secondary_color = gr.ColorPicker(label="Secondary Color", interactive=False)
-        accent_color = gr.ColorPicker(label="Accent Color", interactive=False)
-
-        recommendations = gr.Markdown("", visible=False)
-
-        return (
-            result_message,
-            primary_color,
-            secondary_color,
-            accent_color,
-            recommendations,
-        )
-
     def _launch(self):
         self.demo.launch()
-    
-
-
-
