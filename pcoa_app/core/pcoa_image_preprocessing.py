@@ -4,7 +4,6 @@ import io
 import cv2
 import os
 from PIL import Image
-from utils.color_utils import white_balance
 
 class PCOAImageProcessor:
     def __init__(self, image: np.ndarray):
@@ -31,6 +30,7 @@ class PCOAImageProcessor:
     
 
     def validate_image(self, file_path: str) -> tuple[bool, str, np.ndarray]:
+        print(f"type in processor validate_image: {type(file_path)}")
         print(f"Validating image at path: {file_path}")
 
         if not file_path:
@@ -62,27 +62,3 @@ class PCOAImageProcessor:
         except Exception as e:
             return False, f"File validaton error: {str(e)}", None
     
-    def preprocess_image(self, image: np.ndarray) -> np.ndarray:
-        white_balanced_img = white_balance(image)
-        return white_balanced_img
-    
-    @staticmethod
-    def preprocess_image(image: np.ndarray) -> tuple[np.ndarray, str]:
-        """
-        Complete pipeline for processing image from Gradio interface
-        Returns: (processed_image, status_message)
-        """
-        if image is None:
-            return None, "Please upload an image"
-        
-        img_processor = PCOAImageProcessor(image)
-        is_valid, message, validated_image = img_processor.validate_image(image)
-        
-        if not is_valid:
-            return None, message
-        
-        try:
-            processed_image = img_processor.preprocess_image(validated_image)
-            return processed_image, f"Image processed successfully. Shape: {processed_image.shape}"
-        except Exception as e:
-            return None, f"Error during preprocessing: {str(e)}"

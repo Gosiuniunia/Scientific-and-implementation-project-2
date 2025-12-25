@@ -17,6 +17,7 @@ class PCOAApp:
 
     def build_ui(self):
         with gr.Blocks() as self.demo:
+            gr.Markdown("# 🎨 Personal Color Analysis System")
             # GDPR Modal
             self.gdpr_modal, self.accept_btn, self.decline_btn, self.gdpr_message = (
                 self.build_gdpr_modal()
@@ -39,11 +40,9 @@ class PCOAApp:
                     with gr.Column(scale=1):
                         with gr.Group(visible=False) as self.results_section:
                             self.result_message = gr.Markdown("", visible=False)
-                            self.primary_color = gr.ColorPicker(label="Primary Color", interactive=False)
-                            self.secondary_color = gr.ColorPicker(label="Secondary Color", interactive=False)
-                            self.accent_color = gr.ColorPicker(label="Accent Color", interactive=False)
                             self.description = gr.Markdown("", visible=False)
                             self.jewelerly_recommendation = gr.Markdown("", visible=False)
+                            self.palette_html_output = gr.HTML(label="Interactive Palette")
 
                 # Show analyze button when image is uploaded
                 self.img_input.change(
@@ -70,11 +69,9 @@ class PCOAApp:
                 inputs=[self.img_input],
                 outputs=[
                     self.status_message,   # left column: status
-                    self.primary_color,    # right column: color pickers
-                    self.secondary_color,
-                    self.accent_color,
                     self.description,  # right column: description
                     self.jewelerly_recommendation,  # right column: jewerly recommendation
+                    self.palette_html_output,
                     self.analyze_button,   # left column: re-enable button
                     self.result_message,    # right column: prediction text
                     self.results_section
@@ -101,19 +98,19 @@ class PCOAApp:
             return (
                 gr.update(visible=False),  # analyze_button
                 gr.update(visible=True), # submit button
-                gr.update(value="Please upload an image to begin analysis", visible=True),
+                gr.update(value="### Please upload an image or take a photo", visible=True),
             )
 
         return (
             gr.update(visible=False),   # analyze_button
             gr.update(visible=True),  # submit button
-            gr.update(value="Image uploaded. Click Submit to validate", visible=True),
+            gr.update(value="### Image uploaded. \n ### Click Submit Image button to validate it", visible=True),
         )
     
     def on_image_submitted(self, img):
         if img is None:
             return (
-                gr.update(value="❌ Please upload an image first", visible=True),
+                gr.update(value="### ❌ Upload an image first", visible=True),
                 gr.update(visible=False),  # analyze_button
                 gr.update(visible=True),   # submit button
             )
@@ -123,7 +120,7 @@ class PCOAApp:
             is_valid, message, numpy_image = self.image_processor.validate_image(img)
             if not is_valid:
                 return (
-                    gr.update(value=f"❌ {message}", visible=True),
+                    gr.update(value=f"### ❌ {message}", visible=True),
                     gr.update(visible=False),  # analyze_button
                     gr.update(visible=True),   # submit button
                 )
@@ -131,7 +128,7 @@ class PCOAApp:
             self.image_processor.set_image(numpy_image)
 
             return (
-                gr.update(value="✅ Image was valid and got submitted successfully! You can now analyze your colors.", visible=True),
+                gr.update(value="### ✅ Image was valid and got submitted successfully! \n ### Click on the Analyze button to start analysis.", visible=True),
                 gr.update(visible=True),   # analyze_button
                 gr.update(visible=False),  # submit button
             )
@@ -183,27 +180,24 @@ class PCOAApp:
         )
     
     def build_photo_upload_section(self):
-        gr.Markdown("# 🎨 Personal Color Analysis System")
-        gr.Markdown("Upload your photo to discover your personal color palette!")
+        # Status message
+        status_message = gr.Markdown(
+            value="### Please upload an image in .jpg or .png format.",
+            visible=True
+        )
         # Image upload section
         img_input = gr.Image(
-            label="📸 Upload Your Photo",
+            label="Input photo",
+            # needed for file validation step
             type='filepath',
-            # type="numpy",
             height=400,
             # app requirement - user can upload image or take photo with webcam
             sources=['upload', 'webcam']
         )
-        
-        # Status message
-        status_message = gr.Markdown(
-            value="Please upload an image in *.jpg* or *.png* format to begin analysis.",
-            visible=True
-        )
 
         # Image submission button
         submit_image_button = gr.Button(
-            "📤 Submit Image",
+            "Submit Image",
             variant="secondary",
             visible=False,
             size="lg"
@@ -212,7 +206,7 @@ class PCOAApp:
         
         # Analyze button (initially hidden)
         analyze_button = gr.Button(
-            "🔍 Analyze My Colors",
+            "🔍 Analyze",
             variant="primary",
             visible=False,
             size="lg"
@@ -224,19 +218,26 @@ class PCOAApp:
         return img_input, status_message, analyze_button, submit_image_button, progress_bar
     
     def run_prediction(self, image: np.ndarray, progress=gr.Progress()):
-        """Run prediction pipeline and update UI elements accordingly"""
-        # Pomocnicza funkcja do obsługi błędów i zwracania domyślnych wartości do Gradio
+        """
+        Run prediction pipeline and update UI elements accordingly
+        Args:
+            image (np.ndarray): Input image as a NumPy array.
+            progress (gr.Progress): Gradio progress bar for process updates.
+        Returns:
+            tuple: Updated UI elements.
+        """
         def handle_error(stage, error):
             print(f"!!! ERROR at [{stage}]: {error}")
             return (
-                gr.update(value=f"❌ Failed at {stage}: {str(error)}", visible=True),
-                None, None, None, "", "",
-                gr.update(interactive=True),
-                gr.update(visible=False),
-                gr.update(visible=False)
+                gr.update(value=f"❌ Failed at {stage}: {str(error)}", visible=True), # Status
+                "", "",                    # Description, Jewelry
+                "",                        # HTML Palette
+                gr.update(interactive=True), # Button
+                gr.update(visible=False),    # Result Message
+                gr.update(visible=False)     # Result Container
             )
 
-        # --- KROK 1: POBRANIE I WSTĘPNA WALIDACJA ---
+        # Image upload and validation
         try:
             progress(0.1, desc="Starting analysis...")
             raw_img = self.image_processor.get_image()
@@ -245,7 +246,7 @@ class PCOAApp:
         except Exception as e:
             return handle_error("Image Loading", e)
 
-        # --- KROK 2: PREPROCESSING (np. White Balance) ---
+        # Image preprocessing (feature extraction)
         try:
             progress(0.3, desc="Preprocessing image...")
             preprocessed_image = self.image_processor.preprocess_image(raw_img)
@@ -254,14 +255,10 @@ class PCOAApp:
         except Exception as e:
             return handle_error("Preprocessing", e)
 
-        # --- KROK 3: PREDYKCJA MODELU AI ---
+        # Predicting the seasonal type
         try:
             progress(0.6, desc="Starting prediction...")
             current_img = self.image_processor.get_processed_image()
-            
-            # print(f"--- Prediction: Input shape {current_img} ---")
-            
-            # To tutaj najprawdopodobniej wystąpi błąd scikit-learn
             prediction_results = self.ai_model.predict(current_img)
             
             if not prediction_results:
@@ -271,40 +268,90 @@ class PCOAApp:
         except Exception as e:
             return handle_error("AI Prediction", e)
 
-        # --- KROK 4: POBIERANIE PALETY I OPISÓW ---
+        # Getting color pallete and descriptions based on predicted color type
         try:
             color_palette = self.ai_model.get_palette_info(prediction_results)
             if not color_palette or len(color_palette) < 3:
-                color_palette = ["#808080", "#A0A0A0", "#C0C0C0"]
+                color_palette = ["#808080", "#A0A0A0", "#C0C0C0", "#D0D0D0", "#E0E0E0", "#F0F0F0", "#B0B0B0", "#909090"]
                 
             description = self.ai_model.get_description(prediction_results)
             jewelry = self.ai_model.get_jewelry_recommendation(prediction_results)
+            full_palette_html = self._generate_palette_html(prediction_results)
             print(f"--- Recommendations Retrieval: SUCCESS ---")
         except Exception as e:
             return handle_error("Data Retrieval", e)
-
-        # --- KROK 5: FINALIZACJA I AKTUALIZACJA UI ---
+        
+        # build prediction results string with emoji for each season
+        season_emojis = {
+            "spring": "🌸",
+            "summer": "☀️",
+            "autumn": "🍂",
+            "winter": "❄️"
+        }
+        emoji = season_emojis.get(prediction_results.lower(), "")
+        prediction_results_string = f"{prediction_results.capitalize()} {emoji}"
+        # Showing recommendations in the UI
         try:
             progress(1.0, desc="Analysis complete!")
             self.prediction_done.value = True
             self.predicted_type.value = prediction_results
 
             return (
-                gr.update(value="✅ Image analyzed successfully!", visible=True),
-                color_palette[0],
-                color_palette[1],
-                color_palette[2],
-                description,
-                jewelry,
+                gr.update(value="### ✅ Image analyzed successfully!", visible=True),
+                gr.update(value=f"### 📝 Description\n\n{description}", visible=True), 
+                gr.update(value=f"### 💍 Jewelry recommendations\n\n{jewelry} \n\n ### 🎨 Recommended color palette: ", visible=True),
+                full_palette_html,
                 gr.update(interactive=True),
                 gr.update(
-                    value=f"🎨 **Your Personal Color Type: {prediction_results}**\n\n{description}\n\n{jewelry}",
+                    value=f"### 🎨 Your seasonal color type: **{prediction_results_string}** \n\n",
                     visible=True
                 ),
                 gr.update(visible=True)
             )
         except Exception as e:
             return handle_error("UI Update", e)
+        
+    def _generate_palette_html(self, season):
+        html_colors = ""
+        try:
+            colors = self.ai_model.get_palette_info(season)
+        except Exception as e:
+            print(f"Error retrieving color palette: {e}")
+            return "<div style='color:red'>Season not found</div>"
+        for c in colors:
+                    html_colors += f"""
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-start;">
+                        <div style="
+                            background-color: {c}; 
+                            width: 100%; 
+                            padding-bottom: 100%; 
+                            border-radius: 12px; 
+                            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+                            cursor: pointer;
+                            "
+                            onmouseover="this.style.transform='scale(1.15)'; this.style.zIndex='10';"
+                            onmouseout="this.style.transform='scale(1.0)'; this.style.zIndex='1';">
+                        </div>
+                        <div style="
+                            margin-top: 10px; 
+                            ">
+                            {c}
+                        </div>
+                    </div>
+                    """
+        return f"""
+        <div style="
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 15px; 
+            width: 100%; 
+            max-width: 400px;
+            margin: 0 auto;   
+        ">
+            {html_colors}
+        </div>
+        """
     
     def _launch(self):
         self.demo.launch()
