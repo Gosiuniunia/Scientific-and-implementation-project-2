@@ -35,16 +35,14 @@ class ColorAnalysisModel:
 
         self.model_path = "svc.pkl"
     
-    def predict_dummy(self, features):
-        """Predict color season from extracted features"""
-        predicted_class_id = np.random.randint(0, len(self.classes))
-        confidence = np.random.uniform(0.75, 0.98)
-        predicted_season = self.classes[predicted_class_id]
-        time.sleep(2)
-        return predicted_season, confidence
-    
     def predict(self, features):
-        """Predict color season from extracted features"""
+        """
+        Predicts color season from extracted features
+        Args:
+            features (list): Extracted facial features.
+        Returns:
+            str: Predicted color season.
+        """
         predicted_season = predict_class(self.model_path, features)
         return predicted_season
 
@@ -57,33 +55,3 @@ class ColorAnalysisModel:
     def get_jewelry_recommendation(self, season):
         return self.jewelery_recommendations.get(season)
     
-    def create_color_palette_image(self, season):
-        colors = self.color_palettes[season]
-        
-        # Create image with color swatches
-        swatch_size = 100
-        padding = 10
-        cols = 4
-        rows = 2
-        
-        width = cols * swatch_size + (cols + 1) * padding
-        height = rows * swatch_size + (rows + 1) * padding
-        
-        img = Image.new('RGB', (width, height), 'white')
-        draw = ImageDraw.Draw(img)
-        
-        for idx, color in enumerate(colors):
-            row = idx // cols
-            col = idx % cols
-            
-            x = col * swatch_size + (col + 1) * padding
-            y = row * swatch_size + (row + 1) * padding
-            
-            draw.rectangle(
-                [x, y, x + swatch_size, y + swatch_size],
-                fill=color,
-                outline='#CCCCCC',
-                width=2
-            )
-
-        return img

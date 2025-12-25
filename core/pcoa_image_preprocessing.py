@@ -14,8 +14,8 @@ class PCOAImageProcessor:
         self._processed_image_path = ""
         self._is_preprocessed = gr.State(False)
         self._validation_message = ""
-
         self.model_path = "svc.pkl"
+        self.landmarker_path = "face_landmarker.task"
 
     def get_image(self) -> np.ndarray:
         return self._original_image
@@ -30,11 +30,27 @@ class PCOAImageProcessor:
         self._processed_image = image.copy() if image is not None else None
 
     def validate_image(self, file_path: str) -> tuple[bool, str, np.ndarray]:
+        """
+        Function to validate the uploaded image file.
+        1. Checks if a file is uploaded.
+        2. Checks file extension (only JPG and PNG allowed).
+        3. Checks if the file is not corrupted and can be opened as an image.
+        4. Converts the image to a NumPy array.
+
+        Args:
+            file_path (str): Path to the uploaded image file.
+        Returns:
+            tuple: (is_valid (bool), message (str), image_numpy (np.ndarray or None))
+        1. is_valid: True if the image is valid, False otherwise.
+        2. message: Validation message.
+        3. image_numpy: NumPy array of the image if valid, None otherwise.
+        """
+
+        # Check if file got uploaded
         if not file_path:
             return False, "No image uploaded.", None
 
-        # 2. Sprawdź rozszerzenie pliku
-        # Pobieramy rozszerzenie i zamieniamy na małe litery
+        # File extension check
         _, ext = os.path.splitext(file_path)
         print(f"File extension: {ext}")
         allowed_extensions = {'.jpg', '.jpeg', '.png'}
@@ -42,27 +58,30 @@ class PCOAImageProcessor:
         if ext.lower() not in allowed_extensions:
             return False, f"Unsupported format ({ext}). Please use JPG or PNG.", None
 
-        # 3. Sprawdź czy plik nie jest uszkodzony i wczytaj do NumPy
+        # Trial of opening the file to check for corruption
         try:
-            # Otwieramy przez PIL, żeby sprawdzić nagłówki
             with Image.open(file_path) as img:
-                img.verify() # Sprawdza spójność pliku (czy to naprawdę obraz)
-                
-            # Jeśli verify() przeszło, musimy otworzyć go ponownie do odczytu danych
-            # (verify "zamyka" plik i przesuwa wskaźnik)
+                img.verify()
             with Image.open(file_path) as img:
-                # Konwersja do RGB (bo PNG może mieć RGBA, a JPG RGB)
+                # Converting image to RGB scale
                 img = img.convert("RGB") 
                 image_numpy = np.array(img)
                 return True, "Image validated successfully.", image_numpy
-
         except Exception as e:
             return False, f"File validaton error: {str(e)}", None
         
     def preprocess_image(self, image: np.ndarray) -> np.ndarray:
-        """Applies face feature extraction and white balancing to the image."""
+        """
+        Applies face feature extraction and white balancing to the uploaded image.
+        Args:
+            image (np.ndarray): Input image as a NumPy array.
+        Returns:
+            np.ndarray: Preprocessed image as a NumPy array.
+        1. If face feature extraction fails, returns None.
+        2. If successful, stores the processed image and updates the preprocessing state.
+        """
         try:
-            features = extract_face_features(image, "face_landmarker.task")
+            features = extract_face_features(image, self.landmarker_path)
         except Exception as e:
             print(f"Error during face feature extraction: {e}")
             return None

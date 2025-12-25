@@ -230,7 +230,7 @@ class PCOAApp:
             print(f"!!! ERROR at [{stage}]: {error}")
             return (
                 gr.update(value=f"❌ Failed at {stage}: {str(error)}", visible=True),
-                None, None, None, "", 
+                None, None, None, "", "",
                 gr.update(interactive=True),
                 gr.update(visible=False),
                 gr.update(visible=False)
@@ -298,11 +298,10 @@ class PCOAApp:
                 jewelry,
                 gr.update(interactive=True),
                 gr.update(
-                    value=f"🎨 **Your Personal Color Type: {prediction_results}**\n\n{description}**\n\n{jewelry}",
+                    value=f"🎨 **Your Personal Color Type: {prediction_results}**\n\n{description}\n\n{jewelry}",
                     visible=True
                 ),
                 gr.update(visible=True)
-                # gr.update(visible=True)
             )
         except Exception as e:
             return handle_error("UI Update", e)
