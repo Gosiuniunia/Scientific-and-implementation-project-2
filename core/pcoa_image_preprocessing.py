@@ -1,13 +1,30 @@
 import numpy as np
 import gradio as gr
-import io
-import cv2
 import os
 from PIL import Image
 from face_features_extraction import extract_face_features
 
 class PCOAImageProcessor:
+    """
+    Class representing preprocessing module for PCOA task.
+    Provides methods to validate and extract face features for color analysis.
+    """
+
     def __init__(self, image: np.ndarray):
+        """
+        Initializes the PCOAImageProcessor with an image.
+        Args:
+            image (np.ndarray): Input image as a NumPy array.
+        Fields:
+            _original_image (np.ndarray): Original uploaded image.
+            _processed_image (np.ndarray): Preprocessed image after feature extraction.
+            _original_image_path (str): Path to the original image file.
+            _processed_image_path (str): Path to the processed image file.
+            _is_preprocessed (gr.State): State indicating if the image has been preprocessed.
+            _validation_message (str): Message regarding image validation status.
+            model_path (str): Path to the pre-trained model for feature extraction.
+            landmarker_path (str): Path to the face landmarker task file.
+        """
         self._original_image = image.copy() if image is not None else None
         self._processed_image = None
         self._original_image_path = "" 
@@ -18,15 +35,34 @@ class PCOAImageProcessor:
         self.landmarker_path = "face_landmarker.task"
 
     def get_image(self) -> np.ndarray:
+        """
+        Gets the original image.
+        Returns:
+            np.ndarray: Original image as a NumPy array.
+        """
         return self._original_image
     
     def set_image(self, image: np.ndarray):
+        """
+        Sets the original image.
+        Args:
+            image (np.ndarray): Input image as a NumPy array.
+        """
         self._original_image = image.copy() if image is not None else None
 
     def get_processed_image(self) -> np.ndarray:
+        """
+        Gets the processed image.
+        Returns:
+            np.ndarray: Processed image as a NumPy array.
+        """
         return self._processed_image
     
     def set_processed_image(self, image: np.ndarray):
+        """
+        Sets the processed image.
+        Args:
+            image (np.ndarray): Processed image as a NumPy array."""
         self._processed_image = image.copy() if image is not None else None
 
     def validate_image(self, file_path: str) -> tuple[bool, str, np.ndarray]:

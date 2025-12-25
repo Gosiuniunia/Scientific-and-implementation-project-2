@@ -1,10 +1,18 @@
-import numpy as np
-from PIL import Image, ImageDraw
-import time
 from PCoA_prediction import predict_class
 
 class ColorAnalysisModel:
+    """
+    Class representing the AI module for PCOA task.
+    Provides methods to predict color season and retrieves related information.
+    """
     def __init__(self):
+        """
+        Initializes the ColorAnalysisModel with predefined classes, color palettes, descriptions, and jewelry recommendations.
+        classes: dict: Mapping of class indices to color seasons.
+        color_palettes (dict): Mapping of color seasons to their respective color palettes.
+        descriptions (dict): Mapping of color seasons to their descriptions.
+        jewelery_recommendations (dict): Mapping of color seasons to jewelry recommendations.
+        """
         self.classes = {
             0: "spring",
             1: "summer",
@@ -47,11 +55,32 @@ class ColorAnalysisModel:
         return predicted_season
 
     def get_palette_info(self, season):
+        """
+        Gets color palette for a given season.
+        Args:
+            season (str): Color season.
+        Returns:
+            list: List of hex color codes for the season's palette.
+        """
         return self.color_palettes.get(season)
 
     def get_description(self, season):
+        """
+        Gets description for a given season.
+        Args:
+            season (str): Color season.
+        Returns:
+            str: Description of the season's characteristics.
+        """
         return self.descriptions.get(season)
     
     def get_jewelry_recommendation(self, season):
+        """
+        Gets jewelry recommendation for a given season.
+        Args:
+            season (str): Color season.
+        Returns:
+            str: Jewelry recommendation for the season.
+        """
         return self.jewelery_recommendations.get(season)
     
