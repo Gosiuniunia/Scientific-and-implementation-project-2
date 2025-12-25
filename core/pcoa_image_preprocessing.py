@@ -4,6 +4,7 @@ import io
 import cv2
 import os
 from PIL import Image
+from face_features_extraction import extract_face_features
 
 class PCOAImageProcessor:
     def __init__(self, image: np.ndarray):
@@ -11,28 +12,24 @@ class PCOAImageProcessor:
         self._processed_image = None
         self._original_image_path = "" 
         self._processed_image_path = ""
-
-        self._width = image.shape[1] if image is not None and len(image.shape) >= 2 else 0
-        self._height = image.shape[0] if image is not None and len(image.shape) >= 1 else 0
-        self._channels = image.shape[2] if image is not None and len(image.shape) == 3 else 0
-
         self._is_preprocessed = gr.State(False)
         self._validation_message = ""
+
+        self.model_path = "svc.pkl"
 
     def get_image(self) -> np.ndarray:
         return self._original_image
     
     def set_image(self, image: np.ndarray):
         self._original_image = image.copy() if image is not None else None
-        self._width = image.shape[1] if image is not None and len(image.shape) >= 2 else 0
-        self._height = image.shape[0] if image is not None and len(image.shape) >= 1 else 0
-        self._channels = image.shape[2] if image is not None and len(image.shape) == 3 else 0
+
+    def get_processed_image(self) -> np.ndarray:
+        return self._processed_image
     
+    def set_processed_image(self, image: np.ndarray):
+        self._processed_image = image.copy() if image is not None else None
 
     def validate_image(self, file_path: str) -> tuple[bool, str, np.ndarray]:
-        print(f"type in processor validate_image: {type(file_path)}")
-        print(f"Validating image at path: {file_path}")
-
         if not file_path:
             return False, "No image uploaded.", None
 
@@ -61,4 +58,17 @@ class PCOAImageProcessor:
 
         except Exception as e:
             return False, f"File validaton error: {str(e)}", None
-    
+        
+    def preprocess_image(self, image: np.ndarray) -> np.ndarray:
+        """Applies face feature extraction and white balancing to the image."""
+        try:
+            features = extract_face_features(image, "face_landmarker.task")
+        except Exception as e:
+            print(f"Error during face feature extraction: {e}")
+            return None
+        if features is None:
+            return None
+        self._processed_image = features
+        self._is_preprocessed = True
+        return self._processed_image
+        

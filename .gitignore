@@ -205,3 +205,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+pcoa_app/dummy_run.py
+
+#landmaker model 
+face_landmarker.task
+

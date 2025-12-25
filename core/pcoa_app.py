@@ -225,64 +225,84 @@ class PCOAApp:
     
     def run_prediction(self, image: np.ndarray, progress=gr.Progress()):
         """Run prediction pipeline and update UI elements accordingly"""
-        try:
-
-            # Mock progress
-            progress(0.1, desc="Starting analysis...")
-
-            # Run white-balancing
-            progress(0.3, desc="Preprocessing image...")
-            preprocessed_image = self.image_processor.preprocess_image(
-                self.image_processor.get_image()
-            )
-            self.image_processor.set_image(preprocessed_image)
-
-
-            result = self.ai_model.predict(self.image_processor.get_image())[0]
-
-            # Safely get palette
-            color_palette = self.ai_model.get_palette_info(result)
-            if not color_palette or len(color_palette) < 3:
-                color_palette = ["#808080", "#A0A0A0", "#C0C0C0"]  # fallback
-
-            recommendations = self.ai_model.get_description(result)
-
-            # Update state properly
-            self.prediction_done.value = True
-            self.predicted_type.value = result
-
-            progress(1.0, desc="Analysis complete!")
-
+        # Pomocnicza funkcja do obsługi błędów i zwracania domyślnych wartości do Gradio
+        def handle_error(stage, error):
+            print(f"!!! ERROR at [{stage}]: {error}")
             return (
-                gr.update(
-                    value="✅ Image analyzed successfully!",
-                    visible=True
-                ),                  # status_message (left column)
-                color_palette[0],    # primary color
-                color_palette[1],    # secondary color
-                color_palette[2],    # accent color
-                recommendations,     # recommendations
-                gr.update(interactive=True),  # re-enable button
-                gr.update(
-                    value=f"🎨 **Your Personal Color Type: {result}**\n\n{recommendations}",
-                    visible=True
-                ),  
-                gr.update(visible=True)                   # result_message (right column)
-            )
-
-        except Exception as e:
-            return (
-                gr.update(
-                    value=f"❌ Analysis failed: {str(e)}",
-                    visible=True
-                ),
-                None, None, None,
-                "",
+                gr.update(value=f"❌ Failed at {stage}: {str(error)}", visible=True),
+                None, None, None, "", 
                 gr.update(interactive=True),
                 gr.update(visible=False),
                 gr.update(visible=False)
             )
 
+        # --- KROK 1: POBRANIE I WSTĘPNA WALIDACJA ---
+        try:
+            progress(0.1, desc="Starting analysis...")
+            raw_img = self.image_processor.get_image()
+            if raw_img is None:
+                raise ValueError("No image data found in processor.")
+        except Exception as e:
+            return handle_error("Image Loading", e)
+
+        # --- KROK 2: PREPROCESSING (np. White Balance) ---
+        try:
+            progress(0.3, desc="Preprocessing image...")
+            preprocessed_image = self.image_processor.preprocess_image(raw_img)
+            self.image_processor.set_processed_image(preprocessed_image)
+            print("--- Preprocessing: SUCCESS ---")
+        except Exception as e:
+            return handle_error("Preprocessing", e)
+
+        # --- KROK 3: PREDYKCJA MODELU AI ---
+        try:
+            progress(0.6, desc="Starting prediction...")
+            current_img = self.image_processor.get_processed_image()
+            
+            # print(f"--- Prediction: Input shape {current_img} ---")
+            
+            # To tutaj najprawdopodobniej wystąpi błąd scikit-learn
+            prediction_results = self.ai_model.predict(current_img)
+            
+            if not prediction_results:
+                raise ValueError("Model prediction returned empty list.")
+                
+            # result = prediction_results[0]
+            print(f"--- Prediction: SUCCESS (Result: {prediction_results}) ---")
+        except Exception as e:
+            return handle_error("AI Prediction", e)
+
+        # --- KROK 4: POBIERANIE PALETY I OPISÓW ---
+        try:
+            color_palette = self.ai_model.get_palette_info(prediction_results)
+            if not color_palette or len(color_palette) < 3:
+                color_palette = ["#808080", "#A0A0A0", "#C0C0C0"]
+                
+            recommendations = self.ai_model.get_description(prediction_results)
+        except Exception as e:
+            return handle_error("Data Retrieval", e)
+
+        # --- KROK 5: FINALIZACJA I AKTUALIZACJA UI ---
+        try:
+            progress(1.0, desc="Analysis complete!")
+            self.prediction_done.value = True
+            self.predicted_type.value = prediction_results
+
+            return (
+                gr.update(value="✅ Image analyzed successfully!", visible=True),
+                color_palette[0],
+                color_palette[1],
+                color_palette[2],
+                recommendations,
+                gr.update(interactive=True),
+                gr.update(
+                    value=f"🎨 **Your Personal Color Type: {prediction_results}**\n\n{recommendations}",
+                    visible=True
+                ),
+                gr.update(visible=True)
+            )
+        except Exception as e:
+            return handle_error("UI Update", e)
     
     def build_prediction_result_section(self):
         gr.Markdown("## 🎨 Your Color Analysis Results")
