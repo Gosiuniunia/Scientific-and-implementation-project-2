@@ -92,7 +92,7 @@ class PCOAImageProcessor:
         allowed_extensions = {'.jpg', '.jpeg', '.png'}
         
         if ext.lower() not in allowed_extensions:
-            return False, f"Unsupported format ({ext}). Please use JPG or PNG.", None
+            return False, f"Unsupported image format ({ext}). Please use JPG or PNG.", None
 
         # Trial of opening the file to check for corruption
         try:

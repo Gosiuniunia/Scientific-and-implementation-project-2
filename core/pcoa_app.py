@@ -166,11 +166,11 @@ class PCOAApp:
 
     # Accept button logic
     def accept_gdpr(self):
-        return (
-            gr.update(visible=False),  # hide GDPR modal
-            gr.update(visible=True),   # show main app
-            True                       # set GDPR accepted state
-        )
+            return (
+                gr.update(visible=False),  # hide GDPR modal
+                gr.update(visible=True),   # show main app
+                True                       # set GDPR accepted state
+            )
 
     # Decline button logic
     def decline_gdpr(self):
@@ -262,7 +262,7 @@ class PCOAApp:
             prediction_results = self.ai_model.predict(current_img)
             
             if not prediction_results:
-                raise ValueError("Model prediction returned empty list.")
+                raise ValueError("Couldn't give result for given image. Please upload different one.")
             
             print(f"--- Prediction: SUCCESS (Result: {prediction_results}) ---")
         except Exception as e:
@@ -298,8 +298,8 @@ class PCOAApp:
 
             return (
                 gr.update(value="### ✅ Image analyzed successfully!", visible=True),
-                gr.update(value=f"### 📝 Description\n\n{description}", visible=True), 
-                gr.update(value=f"### 💍 Jewelry recommendations\n\n{jewelry} \n\n ### 🎨 Recommended color palette: ", visible=True),
+                gr.update(value=f"### 📝 Description\n{description}", visible=True), 
+                gr.update(value=f"### 💍 Jewelry recommendations\n{jewelry} \n\n ### 🎨 Recommended color palette: ", visible=True),
                 full_palette_html,
                 gr.update(interactive=True),
                 gr.update(
