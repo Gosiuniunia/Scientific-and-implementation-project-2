@@ -124,9 +124,7 @@ def extract_skin_colour(img, face_landmarks):
                     color = img[y, x]
                     skin_colours.append(color)
     skin_colour = get_lab_colour(skin_colours)
-
     return skin_colour
-
 
 def extract_hair_colour(img, face_landmarks):
     """
@@ -213,6 +211,21 @@ def extract_face_features(image, model_path):
 
     extracted_values = extract_lab_values_from_photo(image, FaceLandmarker, options)
     return extracted_values
+
+def get_number_of_faces(image, model_path):
+    """
+    Return number of faces detected on the photo.
+
+    Args:
+        image (str): Image given as a 
+        model_path (str): Path to the face landmarker model.
+    Returns:
+        int: number of faces detected on the image 
+    """
+    FaceLandmarker, options = init_face_landmark(model_path)
+    no_faces = len(get_face_landmarks(FaceLandmarker, options, image))
+    return no_faces
+
 
 
 # image = 'img.png'

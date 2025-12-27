@@ -10,7 +10,7 @@ class PCOAApp:
     def __init__(self, ai_model, image_processor):
         self.gdpr_accepted = gr.State(False)
         self.prediction_done = gr.State(False)
-        self.predicted_type = gr.State("")
+        # self.predicted_type = gr.State("")
         self.ai_model = ai_model
         self.image_processor = image_processor
         self.build_ui()
@@ -24,10 +24,15 @@ class PCOAApp:
             )
             # Main App (hidden initially)
             with gr.Group(visible=False) as self.main_app:
+                
                 # Create a horizontal layout with two columns
                 with gr.Row():
                     # Left column: image upload section
-                    with gr.Column(scale=1):
+                    right_margin_css = """
+                        .right-margin {
+                            margin-right: 50px;
+                        } """
+                    with gr.Column(elem_classes=right_margin_css, scale=1):
                         (
                             self.img_input,
                             self.status_message,
@@ -203,7 +208,6 @@ class PCOAApp:
             size="lg"
         )
         
-        
         # Analyze button (initially hidden)
         analyze_button = gr.Button(
             "🔍 Analyze",
@@ -294,12 +298,12 @@ class PCOAApp:
         try:
             progress(1.0, desc="Analysis complete!")
             self.prediction_done.value = True
-            self.predicted_type.value = prediction_results
+            # self.predicted_type.value = prediction_results
 
             return (
                 gr.update(value="### ✅ Image analyzed successfully!", visible=True),
                 gr.update(value=f"### 📝 Description\n{description}", visible=True), 
-                gr.update(value=f"### 💍 Jewelry recommendations\n{jewelry} \n\n ### 🎨 Recommended color palette: ", visible=True),
+                gr.update(value=f"### 💍 Jewelry recommendations\n{jewelry} \n\n ### 🎨 Recommended color palette with color codes: ", visible=True),
                 full_palette_html,
                 gr.update(interactive=True),
                 gr.update(

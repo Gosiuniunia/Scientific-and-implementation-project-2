@@ -2,7 +2,7 @@ import numpy as np
 import gradio as gr
 import os
 from PIL import Image
-from face_features_extraction import extract_face_features
+from face_features_extraction import extract_face_features, get_number_of_faces
 
 class PCOAImageProcessor:
     """
@@ -102,9 +102,26 @@ class PCOAImageProcessor:
                 # Converting image to RGB scale
                 img = img.convert("RGB") 
                 image_numpy = np.array(img)
-                return True, "Image validated successfully.", image_numpy
+                # return True, "Image validated successfully.", image_numpy
         except Exception as e:
             return False, f"File validaton error: {str(e)}", None
+        
+        # Checking number of faces present on the uploaded photo
+        print("trial of faces detection check")
+        try:
+            with Image.open(file_path) as img:
+                img = img.convert("RGB")
+                image_numpy = np.array(img)
+                no_faces = get_number_of_faces(image_numpy, self.landmarker_path)
+                print(f"Number of faces spotted: {no_faces}")
+                if no_faces == 1:
+                    return True, "Image validated successfully.", image_numpy
+                elif no_faces == 0:
+                    return False, "No face detected. Please make sure that you uploaded an image with one face present.", None
+                elif no_faces > 1:
+                    return False, "Detected multiple faces. Please upload a picture of one person only.", None
+        except Exception as e:
+            return False, f"File validation error: {str(e)}", None
         
     def preprocess_image(self, image: np.ndarray) -> np.ndarray:
         """
