@@ -1,20 +1,39 @@
 import numpy as np
 import gradio as gr
 import time
-from core.pcoa_image_preprocessing import PCOAImageProcessor
+from core.pcoa_result_visualisation import ResultVisualizer
 
 # added so Iphone HEIC images don't crash the app
 from pillow_heif import register_heif_opener
 register_heif_opener()
 
+
 class PCOAApp:
-    def __init__(self, ai_model, image_processor):
+    """
+    Class representing both Gradio UI and backend logic app components.
+    Provides methods to handle app usage flow with relevant UI and backend responses.
+    """
+
+    def __init__(self, ai_model, image_processor, result_visualiser):
+        """
+        Initializes the PCOAApp object with an PCOAImageProcessor and ColorAnalysisModel instances.
+        Args:
+            gdpr_accepted: gradio State: stores information if GDPR disclaimer got accepted to control app components display state
+            ai_model: ColorAnalysisModel: object of ColorAnalysisModel class, representing AI module of the app
+            image_processor: PCOAImageProcessor: object of PCOAImageProcessor class, representing image preprocessing module
+        """
         self.gdpr_accepted = gr.State(False)
         self.ai_model = ai_model
         self.image_processor = image_processor
+        self.result_visualiser = result_visualiser
         self.build_ui()
 
     def build_ui(self):
+        """
+        Function building both UI and backend components of the app. 
+        Returns: 
+            self.demo: The constructed Gradio demo instance ready to be launched
+        """
         with gr.Blocks() as self.demo:
             gr.Markdown("# 🎨 Personal Color Analysis System")
             # GDPR Modal
@@ -65,7 +84,7 @@ class PCOAApp:
                         self.status_message,
                     ],
                 )
-
+            # Handle click of submit image button; trigger of validation 
             self.submit_image_button.click(
                 fn=self.on_image_submitted,
                 inputs=[self.img_input],
@@ -77,7 +96,7 @@ class PCOAApp:
 
             self.analyze_button.click(
                 fn=self.run_prediction,
-                inputs=[self.img_input],
+                inputs=[],
                 outputs=[
                     self.status_message,   # left column: status
                     self.description,  # right column: description
@@ -105,6 +124,13 @@ class PCOAApp:
         return self.demo
     
     def on_image_uploaded(self, img):
+        """
+        Function handling image upload action. 
+        Checks if image got uploaded and updates visibility of Analyse button and Submit Image buttons.
+        Returns message to user about process status.
+        Returns:
+            gradio 
+        """
         if img is None:
             return (
                 gr.update(visible=False),  # analyze_button
@@ -226,11 +252,10 @@ class PCOAApp:
 
         return img_input, status_message, analyze_button, submit_image_button, progress_bar
     
-    def run_prediction(self, image: np.ndarray, progress=gr.Progress()):
+    def run_prediction(self, progress=gr.Progress()):
         """
-        Run prediction pipeline and update UI elements accordingly
+        Runs prediction pipeline and updates UI elements accordingly
         Args:
-            image (np.ndarray): Input image as a NumPy array.
             progress (gr.Progress): Gradio progress bar for process updates.
         Returns:
             tuple: Updated UI elements.
@@ -282,12 +307,15 @@ class PCOAApp:
 
         # Getting color pallete and descriptions based on predicted color type
         try:
-            color_palette = self.ai_model.get_palette_info(prediction_results)
+            # color_palette = self.ai_model.get_palette_info(prediction_results)
+            color_palette = self.result_visualiser.get_palette_info(prediction_results)
             if not color_palette or len(color_palette) < 3:
                 color_palette = ["#808080", "#A0A0A0", "#C0C0C0", "#D0D0D0", "#E0E0E0", "#F0F0F0", "#B0B0B0", "#909090"]
                 
-            description = self.ai_model.get_description(prediction_results)
-            jewelry = self.ai_model.get_jewelry_recommendation(prediction_results)
+            # description = self.ai_model.get_description(prediction_results)
+            description = self.result_visualiser.get_description(prediction_results)
+            # jewelry = self.ai_model.get_jewelry_recommendation(prediction_results)
+            jewelry = self.result_visualiser.get_jewelry_recommendation(prediction_results)
             full_palette_html = self._generate_palette_html(prediction_results)
             print(f"--- Recommendations Retrieval: SUCCESS ---")
         except Exception as e:
@@ -323,9 +351,17 @@ class PCOAApp:
             return handle_error("UI Update", e)
         
     def _generate_palette_html(self, season):
+        """
+        Generates color pallete tiles corresponding to passed season value.
+        Args:
+            season: str:  representing name of seasonal color type
+        Returns: 
+            str: HTML and CSS style enabling color palette tiles display
+        """
         html_colors = ""
         try:
-            colors = self.ai_model.get_palette_info(season)
+            # colors = self.ai_model.get_palette_info(season)
+            colors = self.result_visualiser.get_palette_info(season)
         except Exception as e:
             print(f"Error retrieving color palette: {e}")
             return "<div style='color:red'>Season not found</div>"
@@ -365,4 +401,7 @@ class PCOAApp:
         """
     
     def _launch(self):
+        """
+        Function launches the underlying Gradio web server.
+        """
         self.demo.launch()
