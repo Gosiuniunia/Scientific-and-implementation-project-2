@@ -24,19 +24,19 @@ Additionally, the environment provides tools for testing and comparing classifie
 
 ```bash
 git clone https://github.com/Gosiuniunia/Scientific-and-implementation-project-2.git
-cd pcoa_app
+python -m venv .venv # create venv if you don't have one already
 source .venv/bin/activate
-python3 -m pip install app_requirements.txt
-python3 run_pcoa_app.py
+python3 -m pip install requirements.txt
+python3 ./run_pcoa_app.py
 ```
 
 # How to run the app - Windows
 ```bash
 git clone https://github.com/Gosiuniunia/Scientific-and-implementation-project-2.git
-cd pcoa_app
+
 .venv/Scripts/Activate.ps1 # for PowerShell users
-python -m pip install app_requirements.txt
-python run_pcoa_app.py
+python -m pip install requirements.txt
+python ./run_pcoa_app.py
 ```
 
 No matter the OS, paste into your browser of choice url shown in console, for example:
