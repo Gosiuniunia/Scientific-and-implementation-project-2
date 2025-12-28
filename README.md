@@ -41,3 +41,46 @@ python ./run_pcoa_app.py
 
 No matter the OS, paste into your browser of choice url shown in console, for example:
 * Running on local URL:  http://127.0.0.1:7860
+
+# Project structure (TODO - this is target structure suggestion)
+'''
+Scientific-and-implementation-project-2/
+├── .venv/
+├── .gitignore
+├── README.md
+├── requirements.txt
+|__ run_pcoa_app.py
+│
+├── core/                          
+│   |__ pcoa_app.py
+│   |__ pcoa_image_preprocessing.py
+│   |__ pcoa_ai_model.py
+│
+├── tests/ 
+|   |__test_color_utils.py
+|   |__test_face_features_extraction.py
+|   |__test_PCoA_predictions.py                       
+│
+├── experiments/
+|   |__ UI_results.py
+|
+|__ utils/
+|   |__ white_balancing
+|      |__classes
+|         |__ WBsRGB.py
+|      |__ models
+|         |__encoderBias+.npy
+|         |__encoderWeights+.npy
+|         |__features+.npy
+|         |__mappingFuncs+.npy
+|      |__color_utils.py
+|   |__prediction
+|       |__PCoA_prediction.py
+|       |__face_features_extraction.py
+|                            
+│
+├── models/
+|   |__ svc.pkl
+|   |__ face_landmarker.task
+│
+└── 
