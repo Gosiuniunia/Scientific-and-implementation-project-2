@@ -1,5 +1,6 @@
 import numpy as np
 import gradio as gr
+import time
 from core.pcoa_image_preprocessing import PCOAImageProcessor
 
 # added so Iphone HEIC images don't crash the app
@@ -9,8 +10,6 @@ register_heif_opener()
 class PCOAApp:
     def __init__(self, ai_model, image_processor):
         self.gdpr_accepted = gr.State(False)
-        self.prediction_done = gr.State(False)
-        # self.predicted_type = gr.State("")
         self.ai_model = ai_model
         self.image_processor = image_processor
         self.build_ui()
@@ -24,7 +23,7 @@ class PCOAApp:
             )
             # Main App (hidden initially)
             with gr.Group(visible=False) as self.main_app:
-                
+
                 # Create a horizontal layout with two columns
                 with gr.Row():
                     # Left column: image upload section
@@ -103,7 +102,7 @@ class PCOAApp:
             return (
                 gr.update(visible=False),  # analyze_button
                 gr.update(visible=True), # submit button
-                gr.update(value="### Please upload an image or take a photo", visible=True),
+                gr.update(value="### Please upload an image of one person or take a photo", visible=True),
             )
 
         return (
@@ -119,7 +118,6 @@ class PCOAApp:
                 gr.update(visible=False),  # analyze_button
                 gr.update(visible=True),   # submit button
             )
-        
         else:
             # validate 
             is_valid, message, numpy_image = self.image_processor.validate_image(img)
@@ -129,7 +127,7 @@ class PCOAApp:
                     gr.update(visible=False),  # analyze_button
                     gr.update(visible=True),   # submit button
                 )
-            # if image is valued, set it in the processor
+            # if image is valid, set it in the processor
             self.image_processor.set_image(numpy_image)
 
             return (
@@ -241,9 +239,10 @@ class PCOAApp:
                 gr.update(visible=False)     # Result Container
             )
 
-        # Image upload and validation
+        # Image upload
         try:
             progress(0.1, desc="Starting analysis...")
+            time.sleep(0.5)
             raw_img = self.image_processor.get_image()
             if raw_img is None:
                 raise ValueError("No image data found in processor.")
@@ -253,6 +252,7 @@ class PCOAApp:
         # Image preprocessing (feature extraction)
         try:
             progress(0.3, desc="Preprocessing image...")
+            time.sleep(0.5)
             preprocessed_image = self.image_processor.preprocess_image(raw_img)
             self.image_processor.set_processed_image(preprocessed_image)
             print("--- Preprocessing: SUCCESS ---")
@@ -261,7 +261,8 @@ class PCOAApp:
 
         # Predicting the seasonal type
         try:
-            progress(0.6, desc="Starting prediction...")
+            progress(0.6, desc="Performing prediction...")
+            time.sleep(0.5)
             current_img = self.image_processor.get_processed_image()
             prediction_results = self.ai_model.predict(current_img)
             
@@ -294,20 +295,19 @@ class PCOAApp:
         }
         emoji = season_emojis.get(prediction_results.lower(), "")
         prediction_results_string = f"{prediction_results.capitalize()} {emoji}"
+
         # Showing recommendations in the UI
         try:
             progress(1.0, desc="Analysis complete!")
-            self.prediction_done.value = True
-            # self.predicted_type.value = prediction_results
-
+            time.sleep(0.5)
             return (
                 gr.update(value="### ✅ Image analyzed successfully!", visible=True),
-                gr.update(value=f"### 📝 Description\n{description}", visible=True), 
-                gr.update(value=f"### 💍 Jewelry recommendations\n{jewelry} \n\n ### 🎨 Recommended color palette with color codes: ", visible=True),
+                gr.update(value=f"### 📝 Description\n{description} <br><br>\n", visible=True), 
+                gr.update(value=f"### 💍 Jewelry recommendations\n{jewelry} <br>\n ### 🎨 Recommended color palette with color codes: <br><br>\n", visible=True),
                 full_palette_html,
                 gr.update(interactive=True),
                 gr.update(
-                    value=f"### 🎨 Your seasonal color type: **{prediction_results_string}** \n\n",
+                    value=f"### 🎨 Your seasonal color type:<br>\n <h2 style='text-align: center;'> {prediction_results_string} </h2><br><br>",
                     visible=True
                 ),
                 gr.update(visible=True)
