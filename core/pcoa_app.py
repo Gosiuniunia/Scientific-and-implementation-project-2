@@ -26,12 +26,11 @@ class PCOAApp:
 
                 # Create a horizontal layout with two columns
                 with gr.Row():
+                    # added for the left margin
+                    with gr.Column(scale=1, min_width=1):
+                        pass
                     # Left column: image upload section
-                    right_margin_css = """
-                        .right-margin {
-                            margin-right: 50px;
-                        } """
-                    with gr.Column(elem_classes=right_margin_css, scale=1):
+                    with gr.Column(scale=20):
                         (
                             self.img_input,
                             self.status_message,
@@ -40,13 +39,21 @@ class PCOAApp:
                             self.progress_bar,
                         ) = self.build_photo_upload_section()
 
+                    # added to create margin between left and right side
+                    with gr.Column(scale=1, min_width=1):
+                        pass
+
                     # Right column: results section (hidden initially)
-                    with gr.Column(scale=1):
+                    with gr.Column(scale=20):
                         with gr.Group(visible=False) as self.results_section:
                             self.result_message = gr.Markdown("", visible=False)
                             self.description = gr.Markdown("", visible=False)
                             self.jewelerly_recommendation = gr.Markdown("", visible=False)
                             self.palette_html_output = gr.HTML(label="Interactive Palette")
+
+                    # added for the right margin
+                    with gr.Column(scale=1, min_width=1):
+                        pass
 
                 # Show analyze button when image is uploaded
                 self.img_input.change(
@@ -307,7 +314,7 @@ class PCOAApp:
                 full_palette_html,
                 gr.update(interactive=True),
                 gr.update(
-                    value=f"### 🎨 Your seasonal color type:<br>\n <h2 style='text-align: center;'> {prediction_results_string} </h2><br><br>",
+                    value=f"### 🎨 Your seasonal color type:<br>\n <h2 style='text-align: center;'> {prediction_results_string} </h2><br>",
                     visible=True
                 ),
                 gr.update(visible=True)

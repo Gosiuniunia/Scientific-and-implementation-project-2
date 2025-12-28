@@ -43,7 +43,7 @@ No matter the OS, paste into your browser of choice url shown in console, for ex
 * Running on local URL:  http://127.0.0.1:7860
 
 # Project structure (TODO - this is target structure suggestion)
-'''
+```text
 Scientific-and-implementation-project-2/
 ├── .venv/
 ├── .gitignore
@@ -84,3 +84,4 @@ Scientific-and-implementation-project-2/
 |   |__ face_landmarker.task
 │
 └── 
+```
