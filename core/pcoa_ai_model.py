@@ -7,11 +7,7 @@ class ColorAnalysisModel:
     """
     def __init__(self):
         """
-        Initializes the ColorAnalysisModel with predefined classes, color palettes, descriptions, and jewelry recommendations.
-        classes: dict: Mapping of class indices to color seasons.
-        color_palettes (dict): Mapping of color seasons to their respective color palettes.
-        descriptions (dict): Mapping of color seasons to their descriptions.
-        jewelery_recommendations (dict): Mapping of color seasons to jewelry recommendations.
+        Initializes the ColorAnalysisModel with model path.
         """
 
         self.model_path = "svc.pkl"

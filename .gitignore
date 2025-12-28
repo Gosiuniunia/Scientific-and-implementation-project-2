@@ -211,3 +211,7 @@ pcoa_app/dummy_run.py
 #landmaker model 
 face_landmarker.task
 
+#test photos
+tests/test_images
+
+

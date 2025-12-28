@@ -58,7 +58,6 @@ class TestResultVisualizer:
         """
         recommendation = viz.get_jewelry_recommendation("autumn")
         assert isinstance(recommendation, str)
-        # Verify specific jewelry keywords for Autumn
         assert "gold" in recommendation
         assert "amber" in recommendation
 
