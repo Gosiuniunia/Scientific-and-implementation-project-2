@@ -94,8 +94,9 @@ class PCOAApp:
                     self.submit_image_button],
             )
 
+            # Handle click of the analyze image button; trigger of prediction
             self.analyze_button.click(
-                fn=self.run_prediction,
+                fn=self.on_run_prediction,
                 inputs=[],
                 outputs=[
                     self.status_message,   # left column: status
@@ -110,13 +111,13 @@ class PCOAApp:
             
             # GDPR buttons
             self.accept_btn.click(
-                fn=self.accept_gdpr,
+                fn=self.on_accept_gdpr,
                 inputs=[],
                 outputs=[self.gdpr_modal, self.main_app, self.gdpr_accepted]
             )
 
             self.decline_btn.click(
-                fn=self.decline_gdpr,
+                fn=self.on_decline_gdpr,
                 inputs=[],
                 outputs=[self.gdpr_message]
             )
@@ -125,11 +126,14 @@ class PCOAApp:
     
     def on_image_uploaded(self, img):
         """
-        Function handling image upload action. 
+        Function handling visuals related to image upload action. 
         Checks if image got uploaded and updates visibility of Analyse button and Submit Image buttons.
         Returns message to user about process status.
         Returns:
-            gradio 
+        tuple: A 3-element tuple containing Gradio updates:
+            'Analyze' button visibility status
+            'Submit' button visibility status
+            str: Image upload action status message
         """
         if img is None:
             return (
@@ -145,6 +149,16 @@ class PCOAApp:
         )
     
     def on_image_submitted(self, img):
+        """
+        Function handling visuals related to image submission action. 
+        Checks if image is valid.
+        Returns message to user about process status.
+        Returns:
+        tuple: A 3-element tuple containing Gradio updates:
+            str: Image upload action status message
+            'Analyze' button visibility status
+            'Submit' button visibility status
+        """
         if img is None:
             return (
                 gr.update(value="### ❌ Upload an image first", visible=True),
@@ -170,6 +184,15 @@ class PCOAApp:
             )
 
     def build_gdpr_modal(self):
+        """
+        Function building the visuals for initial GDPR disclaimer window.
+        Returns:
+            tuple: A 4-element tuple containing the UI components:
+                            1. gradio.Group: The main container for the modal (to toggle visibility).
+                            2. gradio.Button: The 'Accept' button.
+                            3. gradio.Button: The 'Decline' button.
+                            4. gradio.Markdown: The component for displaying status messages.
+        """
         with gr.Group(visible=True) as gdpr_modal:
             gr.Markdown("## 🔒 Privacy & Data Protection Notice")
             gr.Markdown("""
@@ -201,7 +224,15 @@ class PCOAApp:
         return gdpr_modal, accept_btn, decline_btn, gdpr_message
 
     # Accept button logic
-    def accept_gdpr(self):
+    def on_accept_gdpr(self):
+            """
+            Function handling state of visuals related to GDPR statement acceptance action.
+            Returns:
+                tuple: A 3-element tuple containing:
+                    1. dict: Update to hide the GDPR modal.
+                    2. dict: Update to reveal the main application container.
+                    3. bool: The new state value (True) for the gdpr_accepted flag.
+            """
             return (
                 gr.update(visible=False),  # hide GDPR modal
                 gr.update(visible=True),   # show main app
@@ -209,13 +240,33 @@ class PCOAApp:
             )
 
     # Decline button logic
-    def decline_gdpr(self):
+    def on_decline_gdpr(self):
+        """
+        Function handling state of visuals related to GDPR statement acceptance action.
+        Returns:
+            tuple: A 2-element tuple containing:
+                dict: A Gradio update for the status message component that:
+                1. Sets the error text indicating acceptance is required.
+                2. Makes the message visible.
+        """
         return gr.update(
             value="❌ You must accept the privacy policy to use this app.",
             visible=True
         )
     
     def build_photo_upload_section(self):
+        """
+        Function building visuals placed in photo upload section of ther app (left pane).
+        Sets proper visuals visibility statuses and descriptions.
+
+        Returns:
+            tuple: A 5-element tuple containing the UI components:
+                            1. gradio.Image: The input component for file upload and webcam.
+                            2. gradio.Markdown: The status message component.
+                            3. gradio.Button: The 'Analyze' button (initially hidden).
+                            4. gradio.Button: The 'Submit Image' button (initially hidden).
+                            5. gradio.Progress: The progress bar instance for tracking analysis.
+        """
         # Status message
         status_message = gr.Markdown(
             value="### Please upload an image in .jpg or .png format.",
@@ -252,15 +303,34 @@ class PCOAApp:
 
         return img_input, status_message, analyze_button, submit_image_button, progress_bar
     
-    def run_prediction(self, progress=gr.Progress()):
+    def on_run_prediction(self, progress=gr.Progress()):
         """
         Runs prediction pipeline and updates UI elements accordingly
         Args:
             progress (gr.Progress): Gradio progress bar for process updates.
         Returns:
-            tuple: Updated UI elements.
+            tuple: A 7-element tuple containing updates for the results interface:
+                            1. dict: Update with the process status message (Success).
+                            2. dict: Update with the season description text.
+                            3. dict: Update with the jewelry and palette description text.
+                            4. str:  The raw HTML string with the color palette visualization.
+                            5. dict: Update to re-enable Analyze button.
+                            6. dict: Update for the seasonal color type header/result.
+                            7. dict: Update to reveal the results container.
         """
         def handle_error(stage, error):
+            """
+            Helper function for troubleshooting purpose to see at which action app fails. 
+            Returns:
+                tuple: A 7-element tuple containing updates for the results interface:
+                    1. dict: Update with the process status message (Success).
+                    2. dict: Update with the season description text.
+                    3. dict: Update with the jewelry and palette description text.
+                    4. str:  The raw HTML string with the color palette visualization.
+                    5. dict: Update to re-enable Analyze button.
+                    6. dict: Update for the seasonal color type header/result.
+                    7. dict: Update to reveal the results container.
+            """
             print(f"!!! ERROR at [{stage}]: {error}")
             return (
                 gr.update(value=f"❌ Failed at {stage}: {str(error)}", visible=True), # Status
@@ -307,14 +377,11 @@ class PCOAApp:
 
         # Getting color pallete and descriptions based on predicted color type
         try:
-            # color_palette = self.ai_model.get_palette_info(prediction_results)
             color_palette = self.result_visualiser.get_palette_info(prediction_results)
             if not color_palette or len(color_palette) < 3:
                 color_palette = ["#808080", "#A0A0A0", "#C0C0C0", "#D0D0D0", "#E0E0E0", "#F0F0F0", "#B0B0B0", "#909090"]
                 
-            # description = self.ai_model.get_description(prediction_results)
             description = self.result_visualiser.get_description(prediction_results)
-            # jewelry = self.ai_model.get_jewelry_recommendation(prediction_results)
             jewelry = self.result_visualiser.get_jewelry_recommendation(prediction_results)
             full_palette_html = self._generate_palette_html(prediction_results)
             print(f"--- Recommendations Retrieval: SUCCESS ---")
