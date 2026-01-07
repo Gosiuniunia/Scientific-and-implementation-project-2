@@ -2,42 +2,87 @@
 
 # Personal Colour Analysis System
 
-ins implementations of machine learning (ML) and deep learning (DL) methods for **Personal Colour Analysis (PCoA)** system.  
-The goal of this project is to classify individuals into seasonal color types (Spring, Summer, Autumn, Winter) based on image data.
+This is an application that uses **Machine Learning (SVM)** to perform **Personal Colour Analysis (PCoA)**. Users can predict their seasonal color type (Spring, Summer, Autumn, Winter) based on an image from their folder or directly from the camera.
 
-## 🔍 Project Overview TODO: update
+## 🔍 Project Overview
 
-The environment incorporates various components including color feature extraction (based on facial images and landmark detection), hyperparameter tuning of ML classifiers (KNN, SVM, Decision Trees), and preparation and training of DL models (e.g., VGG16), with support for data augmentation.
-
-Additionally, the environment provides tools for testing and comparing classifier performance using statistical tests.
+The application takes an input image, applies preprocessing including face detection and color extraction, and then uses a trained SVM model to classify the user into a seasonal color type. The system is designed as a ready-to-use tool for personal colour analysis.
 
 ## Key Features
-- Image preprocessing including **White balancing**
-- Two distinct modelling approaches:
 
-  1. **Feature-based Machine Learning**:
-     - Extraction of dominant colours from key facial regions (eyes, skin, eyebrows) using MediaPipe facial landmarks
-     - Application of classical ML algorithms:
-       - Support Vector Machine (SVM)
+* Accepts images from local files or live camera input
+* Preprocessing of facial images including **white balancing**
+* Uses **SVM classifier** for color type prediction
+* Fast and user-friendly application
 
-# How to run the app - macOS/Linux
+# How to run the app 
+
+## macOS / Linux
+
+### Clone the repository
 
 ```bash
 git clone https://github.com/Gosiuniunia/Scientific-and-implementation-project-2.git
-python3 -m venv .venv # create venv if you don't have one already
-source .venv/bin/activate
-python3 -m pip install requirements.txt
-python3 ./run_pcoa_app.py
+cd Scientific-and-implementation-project-2
 ```
 
-# How to run the app - Windows
+### Create and activate a virtual environment
+
 ```bash
-git clone https://github.com/Gosiuniunia/Scientific-and-implementation-project-2.git
-python -m venv .venv # create venv if you don't have one already
-.venv/Scripts/Activate.ps1 # for PowerShell users
-python -m pip install requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### Download the model
+
+Download the face landmark model from [Mediapipe Face Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker?hl=pl) and place it in the `models` folder.
+
+### Install dependencies
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### Run the application
+
+```bash
 python ./run_pcoa_app.py
 ```
+
+---
+
+## Windows
+
+### Clone the repository
+
+```bash
+git clone https://github.com/Gosiuniunia/Scientific-and-implementation-project-2.git
+cd Scientific-and-implementation-project-2
+```
+
+### Create and activate a virtual environment (PowerShell)
+
+```bash
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+### Download the model
+
+Download the face landmark model from [Mediapipe Face Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker?hl=pl) and place it in the `models` folder.
+
+### Install dependencies
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### Run the application
+
+```bash
+python ./run_pcoa_app.py
+```
+
 
 No matter the OS, paste into your browser of choice url shown in console, for example:
 * Running on local URL:  http://127.0.0.1:7860
