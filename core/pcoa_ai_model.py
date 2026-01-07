@@ -10,7 +10,7 @@ class ColorAnalysisModel:
         Initializes the ColorAnalysisModel with model path.
         """
 
-        self.model_path = "svc.pkl"
+        self.model_path = "models/svc.pkl"
     
     def predict(self, features):
         """
