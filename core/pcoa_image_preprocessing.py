@@ -31,8 +31,8 @@ class PCOAImageProcessor:
         self._processed_image_path = ""
         self._is_preprocessed = gr.State(False)
         self._validation_message = ""
-        self.model_path = "svc.pkl"
-        self.landmarker_path = 'C:/studia/P_nw/face_landmarker.task'
+        self.model_path = "models/svc.pkl"
+        self.landmarker_path = "models/face_landmarker.task"
 
     def get_image(self) -> np.ndarray:
         """
