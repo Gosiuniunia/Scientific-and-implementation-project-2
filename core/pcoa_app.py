@@ -402,18 +402,29 @@ class PCOAApp:
         try:
             progress(1.0, desc="Analysis complete!")
             time.sleep(0.5)
-            return (
-                gr.update(value="### ✅ Image analyzed successfully!", visible=True),
-                gr.update(value=f"### 📝 Description\n{description} <br><br>\n", visible=True), 
-                gr.update(value=f"### 💍 Jewelry recommendations\n{jewelry} <br>\n ### 🎨 Recommended color palette with color codes: <br><br>\n", visible=True),
-                full_palette_html,
-                gr.update(interactive=True),
-                gr.update(
-                    value=f"### 🎨 Your seasonal color type:<br>\n <h2 style='text-align: center;'> {prediction_results_string} </h2><br>",
-                    visible=True
-                ),
-                gr.update(visible=True)
-            )
+            if prediction_results.lower() == "none":
+                return (
+                    gr.update(value="### ❓ Unsure prediction", visible=True),  # markdown 1
+                    gr.update(value=f"### 📝 Description\n{description} <br><br>\n", visible=True),  # markdown 2
+                    gr.update(visible=True),
+                    gr.update(value="", visible=False),  # html
+                    gr.update(interactive=True),  # button
+                    gr.update(value="", visible=False),  # markdown 6
+                    gr.update(visible=True)  # group
+                )
+            else:
+                return (
+                    gr.update(value="### ✅ Image analyzed successfully!", visible=True),
+                    gr.update(value=f"### 📝 Description\n{description} <br><br>\n", visible=True), 
+                    gr.update(value=f"### 💍 Jewelry recommendations\n{jewelry} <br>\n ### 🎨 Recommended color palette with color codes: <br><br>\n", visible=True),
+                    full_palette_html,
+                    gr.update(interactive=True),
+                    gr.update(
+                        value=f"### 🎨 Your seasonal color type:<br>\n <h2 style='text-align: center;'> {prediction_results_string} </h2><br>",
+                        visible=True
+                    ),
+                    gr.update(visible=True)
+                )
         except Exception as e:
             return handle_error("UI Update", e)
         

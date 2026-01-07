@@ -75,7 +75,7 @@ def map_class(prediction):
     """
     class_mapping = {0: 'autumn', 1: 'spring', 2: 'summer', 3: 'winter'}
     if prediction is None:
-        return None
+        return 'none'
     return class_mapping.get(prediction, None)
 
 def predict_class(model_path, features):
@@ -97,6 +97,7 @@ def predict_class(model_path, features):
     votes = predict_with_voting(X_scaled, decisions, classes, pairs)
     prediction = count_votes(votes)
     pred_class = map_class(prediction)
+    print(pred_class)
     return pred_class
 
 
