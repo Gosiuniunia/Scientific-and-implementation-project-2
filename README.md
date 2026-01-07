@@ -35,7 +35,7 @@ source .venv/bin/activate
 
 ### Download the model
 
-Download the face landmark model from [Mediapipe Face Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker?hl=pl) and place it in the `models` folder.
+Download the face landmark model from [Mediapipe Face Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker?hl=pl) and place it in the `models` folder. Make sure file name is `face_landmarker.task`.
 
 ### Install dependencies
 
@@ -69,7 +69,7 @@ python -m venv .venv
 
 ### Download the model
 
-Download the face landmark model from [Mediapipe Face Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker?hl=pl) and place it in the `models` folder.
+Download the face landmark model from [Mediapipe Face Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker?hl=pl) and place it in the `models` folder. Make sure file name is `face_landmarker.task`.
 
 ### Install dependencies
 
