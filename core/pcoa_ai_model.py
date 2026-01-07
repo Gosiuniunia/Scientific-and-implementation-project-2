@@ -1,4 +1,4 @@
-from PCoA_prediction import predict_class
+from core.utils.PCoA_prediction import predict_class
 
 class ColorAnalysisModel:
     """

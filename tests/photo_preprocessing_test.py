@@ -71,7 +71,7 @@ class TestPCOAImageProcessor:
         assert is_valid is False
         assert "File validaton error" in msg
 
-    @patch("face_features_extraction.get_number_of_faces")
+    @patch("core.utils.face_features_extraction.get_number_of_faces")
     def test_validate_success_one_face(self, mock_count_faces, processor):
         """
         Tests the path with valid file provided, with only one face present.
@@ -82,7 +82,7 @@ class TestPCOAImageProcessor:
         assert "validated successfully" in msg
         assert isinstance(img_array, np.ndarray)
 
-    @patch("face_features_extraction.get_number_of_faces")
+    @patch("core.utils.face_features_extraction.get_number_of_faces")
     def test_validate_failure_zero_faces(self, mock_count_faces, processor):
         """
         Test a failure path where image without a face is provided
@@ -92,7 +92,7 @@ class TestPCOAImageProcessor:
         assert is_valid is False
         assert "No face detected" in msg
 
-    @patch("face_features_extraction.extract_face_features")
+    @patch("core.utils.face_features_extraction.extract_face_features")
     def test_preprocess_success(self, mock_extract, processor):
         """
         Tests that extracted features are stored correctly in image processor object.
@@ -110,7 +110,7 @@ class TestPCOAImageProcessor:
         assert result is not None
         assert processor.get_processed_image() is not None
 
-    @patch("face_features_extraction.extract_face_features")
+    @patch("core.utils.face_features_extraction.extract_face_features")
     def test_preprocess_failure_exception(self, mock_extract, processor):
         """
         Tests handling of situation when features extraction process fails.

@@ -2,7 +2,7 @@ import numpy as np
 import gradio as gr
 import os
 from PIL import Image
-from face_features_extraction import extract_face_features, get_number_of_faces
+from core.utils.face_features_extraction import extract_face_features, get_number_of_faces
 
 class PCOAImageProcessor:
     """
@@ -32,7 +32,7 @@ class PCOAImageProcessor:
         self._is_preprocessed = gr.State(False)
         self._validation_message = ""
         self.model_path = "svc.pkl"
-        self.landmarker_path = "face_landmarker.task"
+        self.landmarker_path = 'C:/studia/P_nw/face_landmarker.task'
 
     def get_image(self) -> np.ndarray:
         """

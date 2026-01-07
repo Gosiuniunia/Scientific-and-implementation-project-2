@@ -9,7 +9,7 @@ import mediapipe as mp
 import cv2
 import numpy as np
 import pandas as pd
-from utils.color_utils import white_balance, crop_img, apply_kmeans, get_lab_colour, get_color_between_points
+from core.utils.color_utils import white_balance, crop_img, apply_kmeans, get_lab_colour, get_color_between_points
 import os
 
 
