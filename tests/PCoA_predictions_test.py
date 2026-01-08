@@ -63,7 +63,7 @@ def test_map_class():
     assert map_class(1) == "spring"
     assert map_class(2) == "summer"
     assert map_class(3) == "winter"
-    assert map_class(None) is None
+    assert map_class(None) is 'none'
 
 
 @patch("joblib.load")

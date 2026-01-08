@@ -20,4 +20,4 @@ class TestColorAnalysisModel:
         model = ColorAnalysisModel()
         result = model.predict(fake_features)
         assert result == "spring"
-        mock_predict_func.assert_called_once_with("svc.pkl", fake_features)
+        mock_predict_func.assert_called_once_with("models/svc.pkl", fake_features)
