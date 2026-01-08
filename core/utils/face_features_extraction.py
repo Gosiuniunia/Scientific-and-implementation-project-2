@@ -202,7 +202,7 @@ def extract_face_features(image, model_path):
     Extracts color features in LAB color spaces from uploaded images.
 
     Args:
-        image (str): Image given as a 
+        image (str): Image given as a RGB numpy array.
         model_path (str): Path to the face landmarker model.
 
     Saves:

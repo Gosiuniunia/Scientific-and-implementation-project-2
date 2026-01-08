@@ -142,7 +142,8 @@ class TestPCOAApp:
         mock_analyze = MagicMock(name="analyze")
         mock_submit = MagicMock(name="submit")
         mock_progress = MagicMock(name="progress")
-        mock_photo_builder.return_value = (mock_img_input, mock_status, mock_analyze, mock_submit, mock_progress)
+        mock_reset = MagicMock(name="reset")
+        mock_photo_builder.return_value = (mock_img_input, mock_status, mock_analyze, mock_submit, mock_progress, mock_reset)
 
         mock_main_app_group = MagicMock(name="main_app_group")
         mock_gr.Group.return_value.__enter__.return_value = mock_main_app_group
@@ -183,7 +184,7 @@ class TestPCOAApp:
 
         result = app.build_photo_upload_section()
         
-        assert len(result) == 5      
+        assert len(result) == 6 
         mock_gr.Markdown.assert_called()    
         mock_gr.Button.assert_called()
         mock_gr.Image.assert_called()
@@ -201,7 +202,7 @@ class TestPCOAApp:
         app, _ , _, _= app_with_mocks
         
         result = app.on_image_uploaded(None)
-        assert len(result) == 3
+        assert len(result) == 4
         
         # Analyze button - hidden
         args1, kwargs1 = mock_gr.update.call_args_list[0]
@@ -228,7 +229,7 @@ class TestPCOAApp:
         
         result = app.on_image_uploaded("fake_image_file.jpg")
         
-        assert len(result) == 3
+        assert len(result) == 4
         
         # Analyze Button should be hidden
         args1, kwargs1 = mock_gr.update.call_args_list[0]
@@ -333,7 +334,7 @@ class TestPCOAApp:
         
         proc.get_image.assert_called()
         
-        assert len(result) == 7
+        assert len(result) == 8
         
         args, kwargs = mock_gr.update.call_args_list[-1]
         
@@ -359,7 +360,7 @@ class TestPCOAApp:
         mock_progress = MagicMock()
         result = app.on_run_prediction(progress=mock_progress)
 
-        assert len(result) == 7
+        assert len(result) == 8
         
         found_error = False
         for call in mock_gr.update.call_args_list:

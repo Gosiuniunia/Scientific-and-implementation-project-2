@@ -56,6 +56,7 @@ class PCOAApp:
                             self.analyze_button,
                             self.submit_image_button,
                             self.progress_bar,
+                            self.reset_button, # Added for reset functionality
                         ) = self.build_photo_upload_section()
 
                     # added to create margin between left and right side
@@ -82,32 +83,52 @@ class PCOAApp:
                         self.analyze_button,
                         self.submit_image_button,
                         self.status_message,
+                        self.reset_button, # Update reset button visibility
                     ],
                 )
-            # Handle click of submit image button; trigger of validation 
-            self.submit_image_button.click(
-                fn=self.on_image_submitted,
-                inputs=[self.img_input],
-                outputs=[
-                    self.status_message,
-                    self.analyze_button,
-                    self.submit_image_button],
-            )
+                # Handle click of submit image button; trigger of validation 
+                self.submit_image_button.click(
+                    fn=self.on_image_submitted,
+                    inputs=[self.img_input],
+                    outputs=[
+                        self.status_message,
+                        self.analyze_button,
+                        self.submit_image_button],
+                )
 
-            # Handle click of the analyze image button; trigger of prediction
-            self.analyze_button.click(
-                fn=self.on_run_prediction,
-                inputs=[],
-                outputs=[
-                    self.status_message,   # left column: status
-                    self.description,  # right column: description
-                    self.jewelerly_recommendation,  # right column: jewerly recommendation
-                    self.palette_html_output,
-                    self.analyze_button,   # left column: re-enable button
-                    self.result_message,    # right column: prediction text
-                    self.results_section
-                ],
-            )
+                # Handle click of the analyze image button; trigger of prediction
+                self.analyze_button.click(
+                    fn=self.on_run_prediction,
+                    inputs=[],
+                    outputs=[
+                        self.status_message,   # left column: status
+                        self.description,  # right column: description
+                        self.jewelerly_recommendation,  # right column: jewerly recommendation
+                        self.palette_html_output,
+                        self.analyze_button,   # left column: re-enable button
+                        self.result_message,    # right column: prediction text
+                        self.results_section,
+                        self.reset_button     # Show reset button after analysis
+                    ]
+                )
+
+                # Handle click of the reset button
+                self.reset_button.click(
+                    fn=self.on_reset,
+                    inputs=[],
+                    outputs=[
+                        self.img_input,
+                        self.status_message,
+                        self.analyze_button,
+                        self.submit_image_button,
+                        self.results_section,
+                        self.reset_button,
+                        self.result_message,
+                        self.description,
+                        self.jewelerly_recommendation,
+                        self.palette_html_output
+                    ]
+                )
             
             # GDPR buttons
             self.accept_btn.click(
@@ -130,22 +151,25 @@ class PCOAApp:
         Checks if image got uploaded and updates visibility of Analyse button and Submit Image buttons.
         Returns message to user about process status.
         Returns:
-        tuple: A 3-element tuple containing Gradio updates:
+        tuple: A 4-element tuple containing Gradio updates:
             'Analyze' button visibility status
             'Submit' button visibility status
             str: Image upload action status message
+            'Reset' button visibility status
         """
         if img is None:
             return (
                 gr.update(visible=False),  # analyze_button
                 gr.update(visible=True), # submit button
                 gr.update(value="### Please upload an image of one person or take a photo", visible=True),
+                gr.update(visible=False), # reset button
             )
 
         return (
             gr.update(visible=False),   # analyze_button
             gr.update(visible=True),  # submit button
             gr.update(value="### Image uploaded. \n ### Click Submit Image button to validate it", visible=True),
+            gr.update(visible=False), # reset button
         )
     
     def on_image_submitted(self, img):
@@ -182,6 +206,24 @@ class PCOAApp:
                 gr.update(visible=True),   # analyze_button
                 gr.update(visible=False),  # submit button
             )
+
+    def on_reset(self):
+        """
+        Function to reset the app to its initial state after GDPR acceptance.
+        Clears image input and hides results.
+        """
+        return (
+            None,
+            gr.update(value="### Please upload an image in .jpg or .png format.", visible=True), # status_message
+            gr.update(visible=False), # analyze_button
+            gr.update(visible=False), # submit_image_button
+            gr.update(visible=False), # results_section
+            gr.update(visible=False), # reset_button
+            gr.update(value="", visible=False), # result_message
+            gr.update(value="", visible=False), # description
+            gr.update(value="", visible=False), # jewelry_recommendation
+            gr.update(value="") # palette_html_output
+        )
 
     def build_gdpr_modal(self):
         """
@@ -260,12 +302,13 @@ class PCOAApp:
         Sets proper visuals visibility statuses and descriptions.
 
         Returns:
-            tuple: A 5-element tuple containing the UI components:
+            tuple: A 6-element tuple containing the UI components:
                             1. gradio.Image: The input component for file upload and webcam.
                             2. gradio.Markdown: The status message component.
                             3. gradio.Button: The 'Analyze' button (initially hidden).
                             4. gradio.Button: The 'Submit Image' button (initially hidden).
                             5. gradio.Progress: The progress bar instance for tracking analysis.
+                            6. gradio.Button: The 'Reset' button (initially hidden).
         """
         # Status message
         status_message = gr.Markdown(
@@ -298,10 +341,18 @@ class PCOAApp:
             size="lg"
         )
         
+        # Reset button (initially hidden)
+        reset_button = gr.Button(
+            "🔄 Reset & New Analysis",
+            variant="primary",
+            visible=False,
+            size="lg"
+        )
+        
         # Progress indicator
         progress_bar = gr.Progress()
 
-        return img_input, status_message, analyze_button, submit_image_button, progress_bar
+        return img_input, status_message, analyze_button, submit_image_button, progress_bar, reset_button
     
     def on_run_prediction(self, progress=gr.Progress()):
         """
@@ -309,27 +360,19 @@ class PCOAApp:
         Args:
             progress (gr.Progress): Gradio progress bar for process updates.
         Returns:
-            tuple: A 7-element tuple containing updates for the results interface:
+            tuple: A 8-element tuple containing updates for the results interface:
                             1. dict: Update with the process status message (Success).
                             2. dict: Update with the season description text.
                             3. dict: Update with the jewelry and palette description text.
                             4. str:  The raw HTML string with the color palette visualization.
-                            5. dict: Update to re-enable Analyze button.
+                            5. dict: Update for Analyze button visibility.
                             6. dict: Update for the seasonal color type header/result.
                             7. dict: Update to reveal the results container.
+                            8. dict: Update to reveal the Reset button.
         """
         def handle_error(stage, error):
             """
             Helper function for troubleshooting purpose to see at which action app fails. 
-            Returns:
-                tuple: A 7-element tuple containing updates for the results interface:
-                    1. dict: Update with the process status message (Success).
-                    2. dict: Update with the season description text.
-                    3. dict: Update with the jewelry and palette description text.
-                    4. str:  The raw HTML string with the color palette visualization.
-                    5. dict: Update to re-enable Analyze button.
-                    6. dict: Update for the seasonal color type header/result.
-                    7. dict: Update to reveal the results container.
             """
             print(f"!!! ERROR at [{stage}]: {error}")
             return (
@@ -338,7 +381,8 @@ class PCOAApp:
                 "",                        # HTML Palette
                 gr.update(interactive=True), # Button
                 gr.update(visible=False),    # Result Message
-                gr.update(visible=False)     # Result Container
+                gr.update(visible=False),    # Result Container
+                gr.update(visible=False)     # Reset Button
             )
 
         # Image upload
@@ -408,9 +452,10 @@ class PCOAApp:
                     gr.update(value=f"### 📝 Description\n{description} <br><br>\n", visible=True),  # markdown 2
                     gr.update(visible=True),
                     gr.update(value="", visible=False),  # html
-                    gr.update(interactive=True),  # button
+                    gr.update(visible=False),  # Hide analyze button
                     gr.update(value="", visible=False),  # markdown 6
-                    gr.update(visible=True)  # group
+                    gr.update(visible=True),  # group
+                    gr.update(visible=True),   # Show reset button
                 )
             else:
                 return (
@@ -418,12 +463,13 @@ class PCOAApp:
                     gr.update(value=f"### 📝 Description\n{description} <br><br>\n", visible=True), 
                     gr.update(value=f"### 💍 Jewelry recommendations\n{jewelry} <br>\n ### 🎨 Recommended color palette with color codes: <br><br>\n", visible=True),
                     full_palette_html,
-                    gr.update(interactive=True),
+                    gr.update(visible=False), # Hide analyze button
                     gr.update(
                         value=f"### 🎨 Your seasonal color type:<br>\n <h2 style='text-align: center;'> {prediction_results_string} </h2><br>",
                         visible=True
                     ),
-                    gr.update(visible=True)
+                    gr.update(visible=True),
+                    gr.update(visible=True), # Show reset button
                 )
         except Exception as e:
             return handle_error("UI Update", e)
