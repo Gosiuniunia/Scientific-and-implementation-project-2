@@ -182,7 +182,8 @@ def extract_lab_values_from_photo(img, FaceLandmarker, options):
     Returns:
         list: A flattened list of LAB color features from iris, skin, and eyebrow.
     """
-    balanced_img = white_balance(img)
+    bgr_img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    balanced_img = white_balance(bgr_img)
     img = (balanced_img * 255).astype(np.uint8)
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     face_landmarks = get_face_landmarks(FaceLandmarker, options, img_rgb)
