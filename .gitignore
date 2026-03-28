@@ -214,4 +214,6 @@ face_landmarker.task
 #test photos
 tests/test_images
 
+.DS_Store
+
 

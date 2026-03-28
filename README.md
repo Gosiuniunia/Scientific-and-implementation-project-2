@@ -15,6 +15,10 @@ The application takes an input image, applies preprocessing including face detec
 * Uses **SVM classifier** for color type prediction
 * Fast and user-friendly application
 
+## Automations used for development
+Core development and testing features simplified with just tool: https://github.com/casey/just.
+
+
 # How to run the app 
 
 ## macOS / Linux
@@ -81,6 +85,22 @@ python -m pip install -r requirements.txt
 
 ```bash
 python ./run_pcoa_app.py
+```
+
+or 
+
+```bash
+just run-app
+
+```
+
+### Run unit tests
+
+1. Install just: https://github.com/casey/just
+2. Run command
+
+```bash
+just test
 ```
 
 
