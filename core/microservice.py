@@ -3,28 +3,39 @@ from pydantic import BaseModel
 import numpy as np
 import joblib
 
-# length of feature list 
 EXPECTED_NO_FEATURES = 9
+MODEL_PATH = "models/svc.pkl"
+
+
+class AIModelService:
+    def __init__(self, model_path: str):
+        self.model = joblib.load(model_path)
+
+    def predict(self, features: list[int]) -> int:
+        if len(features) != EXPECTED_NO_FEATURES:
+            raise ValueError("Invalid feature length")
+
+        x = np.array(features).reshape(1, -1)
+        return int(self.model.predict(x)[0])
+
 
 app = FastAPI()
+model_service = AIModelService(MODEL_PATH)
 
-# load the model
-model = joblib.load("models/svc.pkl")
 
-# request
 class PredictionRequest(BaseModel):
     features: list[int]
 
-# response
+
 class PredictionResponse(BaseModel):
     prediction: int
 
 
 @app.post("/predict", response_model=PredictionResponse)
 def predict(request: PredictionRequest):
-    features = np.array(request.features).reshape(1, -1)
-    if len(request.features) != EXPECTED_NO_FEATURES:
-        raise HTTPException(status_code=400, detail=f"Expected {EXPECTED_NO_FEATURES} features, got {len(request.features)}")
-    prediction = model.predict(features)
-    return PredictionResponse(prediction=prediction)
+    try:
+        prediction = model_service.predict(request.features)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
+    return PredictionResponse(prediction=prediction)
