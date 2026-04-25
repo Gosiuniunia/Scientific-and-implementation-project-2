@@ -9,6 +9,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from core.pcoa_app import PCOAApp
 
+
 class TestPCOAApp:
     @pytest.fixture
     def mock_dependencies(self):
@@ -23,20 +24,19 @@ class TestPCOAApp:
     @pytest.fixture
     def app_with_mocks(self):
         """
-        Creates an app instance where all dependencies 
+        Creates an app instance where all dependencies
         (and Gradio itself) are completely mocked.
         """
         ai_mock = MagicMock()
         proc_mock = MagicMock()
         vis_mock = MagicMock()
-        
+
         with patch("core.pcoa_app.gr") as mock_gradio:
-            app = PCOAApp(ai_mock, proc_mock, vis_mock)
+            app = PCOAApp(proc_mock, vis_mock, ai_mock)
             app.demo = MagicMock()
-            
-            return app, ai_mock, proc_mock, vis_mock
-        
-    
+
+            return app, proc_mock, vis_mock, ai_mock
+
     @patch("core.pcoa_app.gr")
     def test_initialization(self, mock_gradio, mock_dependencies):
         """
@@ -45,10 +45,14 @@ class TestPCOAApp:
             - setting the app work definition state - gdpr acceptance
             - UI build function call
         """
-        ai, proc, vis = mock_dependencies
+        ai_model_orchestrator, proc, vis = mock_dependencies
 
-        app = PCOAApp(ai, proc, vis)
-        assert app.ai_model == ai
+        app = PCOAApp(
+            image_processor=proc,
+            result_visualiser=vis,
+            ai_model_orchestrator=ai_model_orchestrator,
+        )
+        assert app.ai_model_orchestrator == ai_model_orchestrator
         assert app.image_processor == proc
         assert app.result_visualiser == vis
 
@@ -64,18 +68,18 @@ class TestPCOAApp:
         - if number of returned parameters equals to 4
         - if created visual has proper elements (Group, markdown text, button)
         """
-        app, _, _, _= app_with_mocks
+        app, _, _, _ = app_with_mocks
         mock_group = MagicMock()
         mock_gr.Group.return_value.__enter__.return_value = mock_group
-    
+
         mock_row = MagicMock()
         mock_gr.Row.return_value.__enter__.return_value = mock_row
 
         result = app.build_gdpr_modal()
-        
+
         assert len(result) == 4
-        mock_gr.Group.assert_called()       
-        mock_gr.Markdown.assert_called()    
+        mock_gr.Group.assert_called()
+        mock_gr.Markdown.assert_called()
         mock_gr.Button.assert_called()
 
     @patch("core.pcoa_app.gr")
@@ -96,10 +100,10 @@ class TestPCOAApp:
 
         assert mock_gr.update.call_count == 2
         args1, kwargs1 = mock_gr.update.call_args_list[0]
-        assert kwargs1['visible'] is False
+        assert kwargs1["visible"] is False
 
         args2, kwargs2 = mock_gr.update.call_args_list[1]
-        assert kwargs2['visible'] is True
+        assert kwargs2["visible"] is True
 
     @patch("core.pcoa_app.gr")
     def test_on_decline_gdpr(self, mock_gr, app_with_mocks):
@@ -109,33 +113,45 @@ class TestPCOAApp:
         - number of update method calls and their results
         - content of message displayed to user
         """
-        app, _, _, _= app_with_mocks
+        app, _, _, _ = app_with_mocks
 
         result = app.on_decline_gdpr()
         mock_gr.update.assert_called_once()
-        
-        args, kwargs = mock_gr.update.call_args
-        assert "must accept" in kwargs['value'] 
-        assert kwargs['visible'] is True
 
-    #test for build_ui
+        args, kwargs = mock_gr.update.call_args
+        assert "must accept" in kwargs["value"]
+        assert kwargs["visible"] is True
+
+    # test for build_ui
     @patch("core.pcoa_app.gr")
     @patch("core.pcoa_app.PCOAApp.build_photo_upload_section")
     @patch("core.pcoa_app.PCOAApp.build_gdpr_modal")
-    def test_build_ui(self, mock_gdpr_builder, mock_photo_builder, mock_gr, app_with_mocks):
+    def test_build_ui(
+        self, mock_gdpr_builder, mock_photo_builder, mock_gr, app_with_mocks
+    ):
         """
         Tests the structure of whole UI building function
         Checks:
         - if buttons trigger correct functions
         - if proper components such as Blocks are created
-        """  
-        app, _, _, _, = app_with_mocks
+        """
+        (
+            app,
+            _,
+            _,
+            _,
+        ) = app_with_mocks
 
         mock_modal = MagicMock(name="modal")
         mock_accept = MagicMock(name="accept_btn")
         mock_decline = MagicMock(name="decline_btn")
         mock_gdpr_msg = MagicMock(name="gdpr_msg")
-        mock_gdpr_builder.return_value = (mock_modal, mock_accept, mock_decline, mock_gdpr_msg)
+        mock_gdpr_builder.return_value = (
+            mock_modal,
+            mock_accept,
+            mock_decline,
+            mock_gdpr_msg,
+        )
 
         mock_img_input = MagicMock(name="img_input")
         mock_status = MagicMock(name="status")
@@ -143,7 +159,14 @@ class TestPCOAApp:
         mock_submit = MagicMock(name="submit")
         mock_progress = MagicMock(name="progress")
         mock_reset = MagicMock(name="reset")
-        mock_photo_builder.return_value = (mock_img_input, mock_status, mock_analyze, mock_submit, mock_progress, mock_reset)
+        mock_photo_builder.return_value = (
+            mock_img_input,
+            mock_status,
+            mock_analyze,
+            mock_submit,
+            mock_progress,
+            mock_reset,
+        )
 
         mock_main_app_group = MagicMock(name="main_app_group")
         mock_gr.Group.return_value.__enter__.return_value = mock_main_app_group
@@ -155,21 +178,21 @@ class TestPCOAApp:
         mock_img_input.change.assert_called_once()
 
         args, kwargs = mock_img_input.change.call_args
-        assert kwargs['fn'] == app.on_image_uploaded
+        assert kwargs["fn"] == app.on_image_uploaded
 
         mock_submit.click.assert_called_once()
         args, kwargs = mock_submit.click.call_args
-        assert kwargs['fn'] == app.on_image_submitted
+        assert kwargs["fn"] == app.on_image_submitted
 
         mock_analyze.click.assert_called_once()
         args, kwargs = mock_analyze.click.call_args
-        assert kwargs['fn'] == app.on_run_prediction
-        
+        assert kwargs["fn"] == app.on_run_prediction
+
         mock_accept.click.assert_called_once()
         args, kwargs = mock_accept.click.call_args
-        assert kwargs['fn'] == app.on_accept_gdpr
+        assert kwargs["fn"] == app.on_accept_gdpr
 
-        assert mock_main_app_group in kwargs['outputs']
+        assert mock_main_app_group in kwargs["outputs"]
 
     # test for build_photo_upload_section
     @patch("core.pcoa_app.gr")
@@ -180,12 +203,17 @@ class TestPCOAApp:
         - if number of returned parameters equals to 5
         - if created visual has proper elements (Group, markdown text, button)
         """
-        app, _, _, _, = app_with_mocks
+        (
+            app,
+            _,
+            _,
+            _,
+        ) = app_with_mocks
 
         result = app.build_photo_upload_section()
-        
-        assert len(result) == 6 
-        mock_gr.Markdown.assert_called()    
+
+        assert len(result) == 6
+        mock_gr.Markdown.assert_called()
         mock_gr.Button.assert_called()
         mock_gr.Image.assert_called()
         mock_gr.Progress.assert_called()
@@ -199,23 +227,22 @@ class TestPCOAApp:
         - components visibility status
         - message to user
         """
-        app, _ , _, _= app_with_mocks
-        
+        app, _, _, _ = app_with_mocks
+
         result = app.on_image_uploaded(None)
         assert len(result) == 4
-        
+
         # Analyze button - hidden
         args1, kwargs1 = mock_gr.update.call_args_list[0]
-        assert kwargs1['visible'] is False
-        
+        assert kwargs1["visible"] is False
+
         # Submit button - visible
         args2, kwargs2 = mock_gr.update.call_args_list[1]
-        assert kwargs2['visible'] is True
-        
+        assert kwargs2["visible"] is True
+
         # Status message
         args3, kwargs3 = mock_gr.update.call_args_list[2]
-        assert "Please upload" in kwargs3['value']
-
+        assert "Please upload" in kwargs3["value"]
 
     @patch("core.pcoa_app.gr")
     def test_image_uploaded_success(self, mock_gr, app_with_mocks):
@@ -226,23 +253,22 @@ class TestPCOAApp:
         - message to user
         """
         app, _, _, _ = app_with_mocks
-        
+
         result = app.on_image_uploaded("fake_image_file.jpg")
-        
+
         assert len(result) == 4
-        
+
         # Analyze Button should be hidden
         args1, kwargs1 = mock_gr.update.call_args_list[0]
-        assert kwargs1['visible'] is False
-        
+        assert kwargs1["visible"] is False
+
         # Submit Button should be visible
         args2, kwargs2 = mock_gr.update.call_args_list[1]
-        assert kwargs2['visible'] is True
-        
+        assert kwargs2["visible"] is True
+
         # Status Message check
         args3, kwargs3 = mock_gr.update.call_args_list[2]
-        assert "Click Submit" in kwargs3['value']
-
+        assert "Click Submit" in kwargs3["value"]
 
     @patch("core.pcoa_app.gr")
     def test_image_submitted_none(self, mock_gr, app_with_mocks):
@@ -252,14 +278,14 @@ class TestPCOAApp:
         - number of returned values
         - visuals visibility statuses
         """
-        app, _, _, _= app_with_mocks
-        
+        app, _, _, _ = app_with_mocks
+
         result = app.on_image_submitted(None)
         assert len(result) == 3
-        
+
         args, kwargs = mock_gr.update.call_args_list[0]
-        assert "Upload an image first" in kwargs['value']
-        assert kwargs['visible'] is True
+        assert "Upload an image first" in kwargs["value"]
+        assert kwargs["visible"] is True
 
     @patch("core.pcoa_app.gr")
     def test_image_submitted_invalid(self, mock_gr, app_with_mocks):
@@ -270,15 +296,15 @@ class TestPCOAApp:
         - status messages
         - if there was no trial of setting a corrupted file in processor
         """
-        app, _, proc, _ = app_with_mocks
-        
+        app, proc, _, _ = app_with_mocks
+
         proc.validate_image.return_value = (False, "Corrupted file", None)
         result = app.on_image_submitted("bad_file.txt")
-        
+
         assert len(result) == 3
-    
+
         args, kwargs = mock_gr.update.call_args_list[0]
-        assert "Corrupted file" in kwargs['value']
+        assert "Corrupted file" in kwargs["value"]
 
         proc.set_image.assert_not_called()
 
@@ -290,20 +316,20 @@ class TestPCOAApp:
         - number of returned values
         - status messages
         """
-        app, _, proc, _ = app_with_mocks
-        
+        app, proc, _, _ = app_with_mocks
+
         fake_numpy_img = MagicMock()
         proc.validate_image.return_value = (True, "OK", fake_numpy_img)
-    
+
         result = app.on_image_submitted("good_file.jpg")
-        
+
         success_update_call = mock_gr.update.call_args_list[0]
-        assert "submitted successfully" in success_update_call.kwargs['value']
-    
+        assert "submitted successfully" in success_update_call.kwargs["value"]
+
         proc.set_image.assert_called_once_with(fake_numpy_img)
 
     # tests for on_run_prediction
-    @patch("core.pcoa_app.gr") 
+    @patch("core.pcoa_app.gr")
     @patch("core.pcoa_app.time.sleep")
     def test_on_run_prediction_success(self, mock_sleep, mock_gr, app_with_mocks):
         """
@@ -313,35 +339,46 @@ class TestPCOAApp:
             - messages shown to user
             - components visibilities
         """
-        app, _, proc, _ = app_with_mocks 
-        
+        app, proc, _, _ = app_with_mocks
+
         proc.get_image.return_value = "raw_image_data"
         # features giving spring as result
         proc.preprocess_image.return_value = [67, 129, 129, 209, 135, 141, 82, 140, 142]
-        proc.get_processed_image.return_value = [67, 129, 129, 209, 135, 141, 82, 140, 142]
+        proc.get_processed_image.return_value = [
+            67,
+            129,
+            129,
+            209,
+            135,
+            141,
+            82,
+            140,
+            142,
+        ]
 
-        app.ai_model.predict.return_value = "spring"
+        app.ai_model_orchestrator.get_prediction_from_ai_service.return_value = "spring"
         app.result_visualiser.get_palette_info.return_value = ["#639E3F", "#DF5485"]
         app.result_visualiser.get_description.return_value = "Your beauty is bright"
         app.result_visualiser.get_jewelry_recommendation.return_value = "pastel"
-        with patch.object(app, '_generate_palette_html', return_value="<div>Palette</div>") as mock_html_gen:
+        with patch.object(
+            app, "_generate_palette_html", return_value="<div>Palette</div>"
+        ) as mock_html_gen:
             mock_progress = MagicMock()
             result = app.on_run_prediction(progress=mock_progress)
 
         proc.get_image.assert_called()
         proc.preprocess_image.assert_called_with("raw_image_data")
-        app.ai_model.predict.assert_called()
-        
-        proc.get_image.assert_called()
-        
-        assert len(result) == 8
-        
-        args, kwargs = mock_gr.update.call_args_list[-1]
-        
-        assert kwargs['visible'] is True
-        args_first, kwargs_first = mock_gr.update.call_args_list[0]
-        assert "analyzed successfully" in kwargs_first['value']
+        app.ai_model_orchestrator.get_prediction_from_ai_service.assert_called()
 
+        proc.get_image.assert_called()
+
+        assert len(result) == 8
+
+        args, kwargs = mock_gr.update.call_args_list[-1]
+
+        assert kwargs["visible"] is True
+        args_first, kwargs_first = mock_gr.update.call_args_list[0]
+        assert "analyzed successfully" in kwargs_first["value"]
 
     @patch("core.pcoa_app.gr")
     @patch("core.pcoa_app.time.sleep")
@@ -352,19 +389,21 @@ class TestPCOAApp:
         - number of parameters returned
         - if function execution stopped before generating color palette
         """
-        app, _, proc, _ = app_with_mocks
-        
+        app, proc, _, _ = app_with_mocks
+
         proc.get_image.return_value = "data"
-        app.ai_model.predict.side_effect = Exception("AI Model Offline")
+        app.ai_model_orchestrator.get_prediction_from_ai_service.side_effect = (
+            Exception("AI Model Offline")
+        )
 
         mock_progress = MagicMock()
         result = app.on_run_prediction(progress=mock_progress)
 
         assert len(result) == 8
-        
+
         found_error = False
         for call in mock_gr.update.call_args_list:
-            if 'value' in call.kwargs and "AI Model Offline" in call.kwargs['value']:
+            if "value" in call.kwargs and "AI Model Offline" in call.kwargs["value"]:
                 found_error = True
                 break
         assert found_error, "Did not find the Exception message in UI updates"
@@ -375,12 +414,21 @@ class TestPCOAApp:
         """
         Tests generation of color palette tiles in case fetching the colors was successful.
         """
-        app, _, _, vis_mock = app_with_mocks
-        fake_colors = ["#639E3F", "#DF5485", "#DD9A29", "#215380", "#EBDDCC", "#FDAA63", "#008EAA", "#963CBD"]
+        app, _, vis_mock, _ = app_with_mocks
+        fake_colors = [
+            "#639E3F",
+            "#DF5485",
+            "#DD9A29",
+            "#215380",
+            "#EBDDCC",
+            "#FDAA63",
+            "#008EAA",
+            "#963CBD",
+        ]
         vis_mock.get_palette_info.return_value = fake_colors
-        
+
         html_output = app._generate_palette_html("spring")
-        
+
         assert "#639E3F" in html_output
         assert "#DF5485" in html_output
         assert "display: grid" in html_output
@@ -390,7 +438,7 @@ class TestPCOAApp:
         """
         Tests generation of color palette tiles in case fetching the colors failed.
         """
-        app, _, _, vis_mock = app_with_mocks
+        app, _, vis_mock, _ = app_with_mocks
         vis_mock.get_palette_info.side_effect = Exception("Palette details missing")
         html_output = app._generate_palette_html("unknown_season")
         assert "Season not found" in html_output
@@ -398,6 +446,6 @@ class TestPCOAApp:
 
     # test for _launch method
     def test_launch(self, app_with_mocks):
-        app, _, _, _= app_with_mocks
+        app, _, _, _ = app_with_mocks
         app._launch()
         app.demo.launch.assert_called_once()

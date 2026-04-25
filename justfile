@@ -5,7 +5,7 @@ test:
     pytest tests/ --cov=tests --cov-report=term-missing
 
 run-app:
-    python3 run_pcoa_app.py
+    python run_pcoa_app.py
 
 launch-microservice:
     uvicorn core.microservice:app --reload
