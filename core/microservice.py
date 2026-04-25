@@ -3,7 +3,7 @@ import joblib
 from itertools import combinations
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from typing import Annotated
+from typing import Annotated, Optional
 
 EXPECTED_NO_FEATURES = 9
 MODEL_PATH = "models/svc.pkl"
@@ -100,7 +100,7 @@ class PredictionResponse(BaseModel):
     This model is used to format the response data in a consistent way, making it easier for clients to parse and understand the prediction results returned by the API.
     """
 
-    prediction: int
+    prediction: Optional[int]
 
 
 @app.post("/predict", response_model=PredictionResponse)

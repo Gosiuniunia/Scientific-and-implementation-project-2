@@ -38,5 +38,7 @@ class AIServiceOrchestrator:
             raise Exception(f"AI service error: {response.text}")
 
         prediction = response.json()["prediction"]
+        if prediction is None:
+            return "none"
 
         return self.map_result_to_color_type(prediction)
