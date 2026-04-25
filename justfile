@@ -6,3 +6,6 @@ test:
 
 run-app:
     python3 run_pcoa_app.py
+
+launch-microservice:
+    uvicorn core.microservice:app --reload

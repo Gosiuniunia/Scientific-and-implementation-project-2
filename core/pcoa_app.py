@@ -494,8 +494,8 @@ class PCOAApp:
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-start;">
                         <div style="
                             background-color: {c}; 
-                            width: 100%; 
-                            padding-bottom: 100%; 
+                            width: 80px;
+                            height: 80px;
                             border-radius: 12px; 
                             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
                             transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
