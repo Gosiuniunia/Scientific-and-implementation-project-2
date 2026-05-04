@@ -2,6 +2,7 @@ import numpy as np
 import gradio as gr
 import time
 from core.pcoa_result_visualisation import ResultVisualizer
+from core.utils.login import register_user, login_user
 
 # added so Iphone HEIC images don't crash the app
 from pillow_heif import register_heif_opener
@@ -23,6 +24,7 @@ class PCOAApp:
             image_processor: PCOAImageProcessor: object of PCOAImageProcessor class, representing image preprocessing module
         """
         self.gdpr_accepted = gr.State(False)
+        self.current_user = gr.State(None)
         self.ai_model = ai_model
         self.image_processor = image_processor
         self.result_visualiser = result_visualiser
@@ -34,8 +36,40 @@ class PCOAApp:
         Returns: 
             self.demo: The constructed Gradio demo instance ready to be launched
         """
-        with gr.Blocks() as self.demo:
+        # with gr.Blocks() as self.demo:
+        with gr.Blocks(css="""
+            #login_btn {
+                position: fixed;
+                top: 12px;
+                right: 12px;
+                z-index: 9999;
+
+                width: auto !important;
+                min-width: 40px;
+                height: 32px;
+                padding: 4px 10px;
+            }
+            """) as self.demo:
+            self.login_btn = gr.Button("🔐 Login", size="sm", elem_id="login_btn", variant="secondary", visible=True)
+            self.logout_btn = gr.Button("🔐 Logout", size="sm", elem_id="login_btn", variant="secondary", visible=False)
             gr.Markdown("# 🎨 Personal Color Analysis System")
+
+            # Login Panel
+            with gr.Group(visible=False) as self.login_modal:
+                gr.Markdown("## 🔐 Login / Register")
+
+                username = gr.Textbox(label="Username")
+                password = gr.Textbox(label="Password", type="password")
+
+                login_submit = gr.Button("Login")
+                register_submit = gr.Button("Register")
+
+                self.login_status = gr.Markdown("")
+
+            # User Panel
+            with gr.Group(visible=False) as self.user_panel:
+                self.user_welcome = gr.Markdown("")
+
             # GDPR Modal
             self.gdpr_modal, self.accept_btn, self.decline_btn, self.gdpr_message = (
                 self.build_gdpr_modal()
@@ -129,6 +163,47 @@ class PCOAApp:
                         self.palette_html_output
                     ]
                 )
+            
+            # Auth events
+            self.login_btn.click(
+                fn=self.show_login,
+                outputs=[self.login_modal, self.login_btn]
+            )
+
+            login_submit.click(
+                fn=self.do_login,
+                inputs=[username, password],
+                outputs=[
+                    self.login_status,
+                    self.login_modal,
+                    self.user_panel,
+                    self.user_welcome,
+                    self.current_user,
+                    self.main_app,
+                    self.logout_btn
+                ]
+            )
+
+            register_submit.click(
+                fn=self.do_register,
+                inputs=[username, password],
+                outputs=[self.login_status]
+            )
+
+            self.logout_btn.click(
+                fn=self.logout,
+                outputs=[
+                    self.user_panel,
+                    self.login_modal,
+                    self.user_welcome,
+                    self.current_user,
+                    self.main_app,
+                    username,
+                    password,
+                    self.login_btn,
+                    self.logout_btn
+                ]
+            )
             
             # GDPR buttons
             self.accept_btn.click(
@@ -523,6 +598,70 @@ class PCOAApp:
             {html_colors}
         </div>
         """
+    
+    def show_login(self):
+        return (
+            gr.update(visible=True),
+            gr.update(visible=False)
+        )
+
+    def do_login(self, username, password):
+
+        if not username or not password:
+            return (
+                gr.update(value="❌ Username and password required"),
+                gr.update(visible=True),
+                gr.update(visible=False),
+                gr.update(value=""),
+                gr.update(value=None),
+                gr.update(visible=False),
+                gr.update(visible=False)
+            )
+
+        success, msg = login_user(username, password)
+
+        if success:
+            return (
+                gr.update(value=msg),
+                gr.update(visible=False),
+                gr.update(visible=True),
+                gr.update(value=f"### 👋 {username}"),
+                gr.update(value=username), 
+                gr.update(visible=True),
+                gr.update(visible=True)
+            )
+
+        return (
+            gr.update(value=msg),
+            gr.update(visible=True),
+            gr.update(visible=False),
+            gr.update(value=""),
+            gr.update(value=None),
+            gr.update(visible=False),
+            gr.update(visible=False)
+        )
+
+    def do_register(self, username, password):
+        if not username or not password:
+            return gr.update(value="❌ Fill all fields")
+
+        success, msg = register_user(username, password)
+        return gr.update(value=msg)
+
+
+    def logout(self):
+
+        return (
+            gr.update(visible=False), 
+            gr.update(visible=False),  
+            gr.update(value=""),   
+            gr.update(value=None),    
+            gr.update(visible=False),
+            gr.update(value=""),       
+            gr.update(value=""),      
+            gr.update(visible=True),  
+            gr.update(visible=False)  
+        )
     
     def _launch(self):
         """
