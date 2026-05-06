@@ -34,6 +34,8 @@ def register_user(username, password):
             return False, "User already exists"
         else:
             return False,  "DB error:" + e
+    finally:
+        conn.close()
 
 
 def login_user(username, password):
