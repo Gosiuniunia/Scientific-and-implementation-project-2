@@ -493,7 +493,9 @@ class PCOAApp:
                 gr.update(interactive=True), # Button
                 gr.update(visible=False),    # Result Message
                 gr.update(visible=False),    # Result Container
-                gr.update(visible=False)     # Reset Button
+                gr.update(visible=False),     # Reset Button
+                gr.update(visible=False),  # 9 save_name_input
+                gr.update(visible=False),  # 10 save_button
             )
 
         # Image upload

@@ -54,6 +54,6 @@ def login_user(username, password):
     stored_hash = result[0]
 
     if stored_hash == password_hash:
-        return True, None
+        return True, ""
     else:
         return False, "Wrong password"

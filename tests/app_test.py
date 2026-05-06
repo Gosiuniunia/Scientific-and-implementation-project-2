@@ -334,9 +334,9 @@ class TestPCOAApp:
         
         proc.get_image.assert_called()
         
-        assert len(result) == 8
+        assert len(result) == 10
         
-        args, kwargs = mock_gr.update.call_args_list[-1]
+        args, kwargs = mock_gr.update.call_args_list[-3]
         
         assert kwargs['visible'] is True
         args_first, kwargs_first = mock_gr.update.call_args_list[0]
@@ -360,7 +360,7 @@ class TestPCOAApp:
         mock_progress = MagicMock()
         result = app.on_run_prediction(progress=mock_progress)
 
-        assert len(result) == 8
+        assert len(result) == 10
         
         found_error = False
         for call in mock_gr.update.call_args_list:
