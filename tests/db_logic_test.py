@@ -87,4 +87,7 @@ def test_login_non_existent_user():
 
 def test_db_error_handling():
     """TODO linijka 36"""
+
+    success, msg = register_user( None, "pass")
+    assert success is False
     return 

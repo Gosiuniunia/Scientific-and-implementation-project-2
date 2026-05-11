@@ -33,7 +33,7 @@ def register_user(username, password):
         if "UNIQUE constraint failed" in str(e):
             return False, "User already exists"
         else:
-            return False,  "DB error:" + e
+            return False, "DB error: " + str(e)
     finally:
         conn.close()
 
