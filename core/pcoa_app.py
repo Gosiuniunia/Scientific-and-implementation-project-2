@@ -1,6 +1,9 @@
 import numpy as np
 import gradio as gr
 import time
+from core.pcoa_result_visualisation import ResultVisualizer
+from core.utils.login import register_user, login_user
+from core.utils.history import save_color_analysis, get_user_analyses
 
 # added so Iphone HEIC images don't crash the app
 from pillow_heif import register_heif_opener
@@ -23,6 +26,10 @@ class PCOAApp:
             ai_model_orchestrator: AIServiceOrchestrator: object of AIServiceOrchestrator class, representing the link to AI microservice and prediction retrieval module
         """
         self.gdpr_accepted = gr.State(False)
+        self.current_user = None
+        self.history = []
+        self.last_prediction = "none"
+        self.ai_model = ai_model
         self.image_processor = image_processor
         self.result_visualiser = result_visualiser
         self.ai_model_orchestrator = ai_model_orchestrator
@@ -34,8 +41,42 @@ class PCOAApp:
         Returns:
             self.demo: The constructed Gradio demo instance ready to be launched
         """
-        with gr.Blocks() as self.demo:
+
+        with gr.Blocks(css="""
+            #login_btn {
+                position: fixed;
+                top: 12px;
+                right: 12px;
+                z-index: 9999;
+
+                width: auto !important;
+                min-width: 40px;
+                height: 32px;
+                padding: 4px 10px;
+            }
+            """) as self.demo:
+            self.login_btn = gr.Button("🔐 Login", elem_id="login_btn", variant="secondary", visible=True)
+            self.logout_btn = gr.Button("🔐 Logout", elem_id="login_btn", variant="secondary", visible=False)
             gr.Markdown("# 🎨 Personal Color Analysis System")
+
+            # Login Panel
+            with gr.Group(visible=False) as self.login_modal:
+                gr.Markdown("## 🔐 Login / Register")
+
+                username = gr.Textbox(label="Username")
+                password = gr.Textbox(label="Password", type="password")
+
+                login_submit = gr.Button("Login")
+                register_submit = gr.Button("Register")
+
+                self.login_status = gr.Markdown("")
+
+            # User Panel
+            with gr.Group(visible=False) as self.user_panel:
+                self.user_welcome = gr.Markdown("")
+                gr.Markdown("<div style='height:20px'></div>")
+                self.history_output = gr.Markdown("")
+
             # GDPR Modal
             self.gdpr_modal, self.accept_btn, self.decline_btn, self.gdpr_message = (
                 self.build_gdpr_modal()
@@ -57,6 +98,18 @@ class PCOAApp:
                             self.progress_bar,
                             self.reset_button,  # Added for reset functionality
                         ) = self.build_photo_upload_section()
+
+                        # Save section placeholder
+                        self.save_name_input = gr.Textbox(
+                            label="Analysis name",
+                            placeholder="e.g. My spring test",
+                            visible=False
+                        )
+                        self.save_button = gr.Button(
+                            "💾 Save result",
+                            variant="primary",
+                            visible=False
+                        )
 
                     # added to create margin between left and right side
                     with gr.Column(scale=1, min_width=1):
@@ -112,8 +165,10 @@ class PCOAApp:
                         self.analyze_button,  # left column: re-enable button
                         self.result_message,  # right column: prediction text
                         self.results_section,
-                        self.reset_button,  # Show reset button after analysis
-                    ],
+                        self.reset_button,     # Show reset button after analysis
+                        self.save_name_input,
+                        self.save_button
+                    ]
                 )
 
                 # Handle click of the reset button
@@ -131,9 +186,63 @@ class PCOAApp:
                         self.description,
                         self.jewelerly_recommendation,
                         self.palette_html_output,
-                    ],
+                        self.save_name_input,
+                        self.save_button
+                    ]
                 )
+            
+            # Auth events
+            self.login_btn.click(
+                fn=self.show_login,
+                outputs=[self.login_modal, self.login_btn]
+            )
 
+            login_submit.click(
+                fn=self.do_login,
+                inputs=[username, password],
+                outputs=[
+                    self.login_status,
+                    self.login_modal,  
+                    self.user_panel,   
+                    self.user_welcome,
+                    self.main_app,
+                    self.logout_btn,
+                    self.history_output,
+                    self.save_name_input,
+                    self.save_button
+                ]
+            )
+
+            register_submit.click(
+                fn=self.do_register,
+                inputs=[username, password],
+                outputs=[self.login_status]
+            )
+
+            self.logout_btn.click(
+                fn=self.logout,
+                outputs=[
+                    self.user_panel,
+                    self.login_modal,
+                    self.user_welcome,
+                    self.main_app,
+                    username,
+                    password,
+                    self.login_btn,
+                    self.logout_btn,
+                    self.history_output,
+                    self.save_name_input,
+                    self.save_button
+                ]
+            )
+
+            # Save button
+            self.save_button.click(
+                fn=self.save_result,
+                inputs=[self.save_name_input],
+                outputs=[self.history_output, self.save_name_input]
+            )
+            
             # GDPR buttons
             self.accept_btn.click(
                 fn=self.on_accept_gdpr,
@@ -225,17 +334,17 @@ class PCOAApp:
         """
         return (
             None,
-            gr.update(
-                value="### Please upload an image in .jpg or .png format.", visible=True
-            ),  # status_message
-            gr.update(visible=False),  # analyze_button
-            gr.update(visible=False),  # submit_image_button
-            gr.update(visible=False),  # results_section
-            gr.update(visible=False),  # reset_button
-            gr.update(value="", visible=False),  # result_message
-            gr.update(value="", visible=False),  # description
-            gr.update(value="", visible=False),  # jewelry_recommendation
-            gr.update(value=""),  # palette_html_output
+            gr.update(value="### Please upload an image in .jpg or .png format.", visible=True), # status_message
+            gr.update(visible=False), # analyze_button
+            gr.update(visible=False), # submit_image_button
+            gr.update(visible=False), # results_section
+            gr.update(visible=False), # reset_button
+            gr.update(value="", visible=False), # result_message
+            gr.update(value="", visible=False), # description
+            gr.update(value="", visible=False), # jewelry_recommendation
+            gr.update(value=""), # palette_html_output
+            gr.update(visible=False),  # save_name_input
+            gr.update(visible=False)   # save_button
         )
 
     def build_gdpr_modal(self):
@@ -371,7 +480,7 @@ class PCOAApp:
         Args:
             progress (gr.Progress): Gradio progress bar for process updates.
         Returns:
-            tuple: A 8-element tuple containing updates for the results interface:
+            tuple: A 10-element tuple containing updates for the results interface:
                             1. dict: Update with the process status message (Success).
                             2. dict: Update with the season description text.
                             3. dict: Update with the jewelry and palette description text.
@@ -380,6 +489,8 @@ class PCOAApp:
                             6. dict: Update for the seasonal color type header/result.
                             7. dict: Update to reveal the results container.
                             8. dict: Update to reveal the Reset button.
+                            9. dict: Update to reveal the Save name input textbook
+                            10. dict: Update to reveal Save button
         """
 
         def handle_error(stage, error):
@@ -388,16 +499,15 @@ class PCOAApp:
             """
             print(f"!!! ERROR at [{stage}]: {error}")
             return (
-                gr.update(
-                    value=f"❌ Failed at {stage}: {str(error)}", visible=True
-                ),  # Status
-                "",
-                "",  # Description, Jewelry
-                "",  # HTML Palette
-                gr.update(interactive=True),  # Button
-                gr.update(visible=False),  # Result Message
-                gr.update(visible=False),  # Result Container
-                gr.update(visible=False),  # Reset Button
+                gr.update(value=f"❌ Failed at {stage}: {str(error)}", visible=True), # Status
+                "", "",                    # Description, Jewelry
+                "",                        # HTML Palette
+                gr.update(interactive=True), # Button
+                gr.update(visible=False),    # Result Message
+                gr.update(visible=False),    # Result Container
+                gr.update(visible=False),     # Reset Button
+                gr.update(visible=False),  # 9 save_name_input
+                gr.update(visible=False),  # 10 save_button
             )
 
         # Image upload
@@ -487,7 +597,9 @@ class PCOAApp:
                     gr.update(visible=False),  # Hide analyze button
                     gr.update(value="", visible=False),  # markdown 6
                     gr.update(visible=True),  # group
-                    gr.update(visible=True),  # Show reset button
+                    gr.update(visible=True),   # Show reset button
+                    gr.update(visible=False),
+                    gr.update(visible=False)
                 )
             else:
                 return (
@@ -509,7 +621,9 @@ class PCOAApp:
                         visible=True,
                     ),
                     gr.update(visible=True),
-                    gr.update(visible=True),  # Show reset button
+                    gr.update(visible=True), # Show reset button
+                    gr.update(visible=True if self.current_user != None else False),
+                    gr.update(visible=True if self.current_user != None else False)
                 )
         except Exception as e:
             return handle_error("UI Update", e)
@@ -563,7 +677,170 @@ class PCOAApp:
             {html_colors}
         </div>
         """
+    
+    def show_login(self):
+        return (
+            gr.update(visible=True),
+            gr.update(visible=False)
+        )
 
+    def do_login(self, username, password):
+        """
+        Check login condition.
+        Args:
+            username: username provided in a textbox.
+            password: password provided in a textbox
+        Returns:
+            tuple: A 8-element tuple containing updates for the results interface:
+                            1. dict: Update with the login status message.
+                            2. dict: Update to reveal the login panel.
+                            3. dict: Update to reveal the user panel.
+                            4. dict: Update to reveal the main app.
+                            5. dict: Update to reveal the logout button.
+                            6. dict: Update to reveal saved history results.
+                            7. dict: Update to reveal the Save name input textbook
+                            8. dict: Update to reveal Save button
+        """
+
+        if not username or not password:
+            return (
+                gr.update(value="❌ Username and password required"),
+                gr.update(visible=True),
+                gr.update(visible=False),
+                gr.update(value=""),
+                gr.update(visible=True),
+                gr.update(visible=False),
+                gr.update(value=""),
+                gr.update(visible=False),
+                gr.update(visible=False),
+            )
+
+        success, msg = login_user(username, password)
+
+        if success:
+            self.history = get_user_analyses(str(username))
+            history_md = self.format_history(self.history)
+            self.current_user = username
+
+            return (
+                gr.update(value=msg),
+                gr.update(visible=False),
+                gr.update(visible=True),
+                gr.update(value=f"## 👋 {username}"),
+                gr.update(visible=True),
+                gr.update(visible=True),
+                gr.update(value=history_md),
+                gr.update(visible=True if self.last_prediction != "none" else False),
+                gr.update(visible=True if self.last_prediction != "none" else False),
+            )
+
+        return (
+            gr.update(value=msg),
+            gr.update(visible=True),
+            gr.update(visible=False),
+            gr.update(value=""),
+            gr.update(visible=True),
+            gr.update(visible=False),
+            gr.update(value=""),
+            gr.update(visible=False),
+            gr.update(visible=False),
+        )
+
+    def do_register(self, username, password):
+        """
+        Registration process.
+        Args:
+            username: username provided in a textbox.
+            password: password provided in a textbox
+        Returns:
+            dict: Update with the registration status message.
+        """
+        if not username or not password:
+            return gr.update(value="❌ Fill all fields")
+
+        _, msg = register_user(username, password)
+        return gr.update(value=msg)
+
+    def logout(self):
+        """
+        Logout process.
+        Returns:
+            tuple: A 10-element tuple containing updates for the results interface:
+                            1. dict: Update to reveal the user panel.
+                            2. dict: Update to reveal the welcoming message
+                            3. dict: Update to reveal the main app.
+                            4. dict: Update the username textbox value
+                            5. dict: Update the password textbox value
+                            6. dict: Update to reveal the login button.
+                            7. dict: Update to hide the logout button.
+                            8. dict: Update to update saved history results.
+                            9. dict: Update to hide the Save name input textbook
+                            10. dict: Update to hide Save button
+        """
+        self.history = []
+        self.current_user = None
+
+        return (
+            gr.update(visible=False), 
+            gr.update(visible=False),  
+            gr.update(value=""),   
+            gr.update(visible=True),
+            gr.update(value=""),       
+            gr.update(value=""),      
+            gr.update(visible=True),  
+            gr.update(visible=False),
+            gr.update(value=""),
+            gr.update(visible=False),
+            gr.update(visible=False)
+        )
+    
+    def format_history(self, history):
+        """
+        Function for displaying saved results in a database.
+        Args:
+            history: list of results from a database
+        Returns:
+            dict: Update the history display.
+        """
+
+        if not history:
+            return "### 📝 No saved analyses\nPerform your first one and save the result."
+
+        emoji_map = {
+            "spring": "🌸",
+            "summer": "☀️",
+            "autumn": "🍂",
+            "jesień": "🍂",
+            "winter": "❄️"
+        }
+
+        lines = ["### 📊 History of analysis\n"]
+
+        for _, name, season, date in history:
+            emoji = emoji_map.get(season.lower(), "")
+            lines.append(f"- **{name}** | {date} | {season.capitalize()} {emoji}")
+
+        return "\n".join(lines)
+    
+    def save_result(self, name):
+        """
+        Saving the results to the database
+        Args:
+            name: username to filter the database by
+        Returns:
+            tuple: A 2-element tuple containing updates for the results interface:
+                            1. dict: Update the history to display.
+                            2. dict: Update to clear Save name input textbox
+        """
+        user_id = self.current_user
+        if not user_id or not self.last_prediction or self.last_prediction.lower() == "none":
+            return (self.format_history(self.history), gr.update(value=""))
+
+        save_color_analysis(user_id, self.last_prediction, name)
+
+        self.history = get_user_analyses(str(user_id))
+        return (self.format_history(self.history), gr.update(value=""))
+    
     def _launch(self):
         """
         Function launches the underlying Gradio web server.

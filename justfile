@@ -2,7 +2,7 @@ venv:
     source .venv/bin/activate
 
 test:
-    pytest tests/ --cov=tests --cov-report=term-missing
+    pytest tests/ --cov=core --cov-report=term-missing
 
 run-app:
     python run_pcoa_app.py
