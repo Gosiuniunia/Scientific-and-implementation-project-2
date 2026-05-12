@@ -29,7 +29,7 @@ class PCOAApp:
         self.current_user = None
         self.history = []
         self.last_prediction = "none"
-        self.ai_model = ai_model
+        # self.ai_model = ai_model
         self.image_processor = image_processor
         self.result_visualiser = result_visualiser
         self.ai_model_orchestrator = ai_model_orchestrator
@@ -547,6 +547,7 @@ class PCOAApp:
                 )
 
             print(f"--- Prediction: SUCCESS (Result: {prediction_results}) ---")
+            self.last_prediction = prediction_results
         except Exception as e:
             return handle_error("AI Prediction", e)
 

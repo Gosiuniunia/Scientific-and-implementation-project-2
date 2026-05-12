@@ -511,7 +511,7 @@ class TestPCOAApp:
         """Verify that analysis results contain the correct emoji and season name."""
         app, _, proc, vis = app_with_mocks
         proc.get_image.return_value = "img"
-        app.ai_model.predict.return_value = "autumn"
+        app.ai_model_orchestrator.get_prediction_from_ai_service.return_value = "autumn"
         vis.get_description.return_value = "Desc"
         vis.get_jewelry_recommendation.return_value = "Gold"
         
@@ -547,7 +547,7 @@ class TestPCOAApp:
         mock_gr.update.side_effect = lambda **kwargs: kwargs
         
         proc.get_image.return_value = "img"
-        app.ai_model.predict.return_value = "winter"
+        app.ai_model_orchestrator.get_prediction_from_ai_service.return_value = "winter"
         
         result = app.on_run_prediction(progress=MagicMock())
 
@@ -564,7 +564,7 @@ class TestPCOAApp:
         mock_gr.update.side_effect = lambda **kwargs: kwargs
         
         proc.get_image.return_value = "img"
-        app.ai_model.predict.return_value = "winter"
+        app.ai_model_orchestrator.get_prediction_from_ai_service.return_value = "winter"
         
         result = app.on_run_prediction(progress=MagicMock())
         
@@ -643,7 +643,7 @@ class TestPCOAApp:
     def test_on_run_prediction_image_loading_failure(self, app_with_mocks):
         """Test handling of image loading failures (get_image returns None)."""
         app, _, proc_mock, _ = app_with_mocks
-        proc_mock.get_image.return_value = None
+        proc_mock.configure_mock(**{'get_image.return_value': None})
         mock_progress = MagicMock()
     
         result = app.on_run_prediction(progress=mock_progress)
@@ -658,8 +658,8 @@ class TestPCOAApp:
         """Test coverage for 'except Exception' in the Preprocessing section."""
         app, _, proc_mock, _ = app_with_mocks
     
-        proc_mock.get_image.return_value = MagicMock()
-        proc_mock.preprocess_image.side_effect = Exception("Preprocessing failed")
+        proc_mock.configure_mock(**{'get_image.return_value': MagicMock()})
+        proc_mock.configure_mock(**{'preprocess_image.side_effect': Exception("Preprocessing failed")})
         
         result = app.on_run_prediction(progress=MagicMock())
         found_error = any("Failed at Preprocessing" in str(r) for r in result if isinstance(r, (str, dict)))
@@ -669,9 +669,9 @@ class TestPCOAApp:
         """Test coverage for unsure prediction logic (results.lower() == 'none')."""
         app, ai_mock, proc_mock, vis_mock = app_with_mocks
         
-        proc_mock.get_image.return_value = MagicMock()
-        ai_mock.predict.return_value = "none"
-        vis_mock.get_description.return_value = "Unknown type description"
+        proc_mock.configure_mock(**{'get_image.return_value': MagicMock()})
+        ai_mock.configure_mock(**{'get_prediction_from_ai_service.return_value': "none"})
+        vis_mock.configure_mock(**{'get_description.return_value': "Unknown type description"})
         
         result = app.on_run_prediction(progress=MagicMock())
         found_unsure = any("Unsure prediction" in str(r) for r in result if isinstance(r, (str, dict)))
@@ -683,9 +683,9 @@ class TestPCOAApp:
         """Test coverage for ValueError when no prediction results are returned."""
         app, ai_mock, proc_mock, _ = app_with_mocks
         
-        proc_mock.get_image.return_value = MagicMock()
-        proc_mock.preprocess_image.return_value = MagicMock()
-        ai_mock.predict.return_value = None 
+        proc_mock.configure_mock(**{'get_image.return_value': MagicMock()})
+        proc_mock.configure_mock(**{'preprocess_image.return_value': MagicMock()})
+        ai_mock.configure_mock(**{'get_prediction_from_ai_service.return_value': None})
         
         result = app.on_run_prediction(progress=MagicMock())
         found_error = any("Failed at AI Prediction" in str(r) for r in result if isinstance(r, (str, dict)))
@@ -695,9 +695,9 @@ class TestPCOAApp:
         """Test coverage for exceptions in the Data Retrieval section."""
         app, ai_mock, proc_mock, vis_mock = app_with_mocks
         
-        proc_mock.get_image.return_value = MagicMock()
-        ai_mock.predict.return_value = "Spring"
-        vis_mock.get_palette_info.side_effect = Exception("Database error")
+        proc_mock.configure_mock(**{'get_image.return_value': MagicMock()})
+        ai_mock.configure_mock(**{'get_prediction_from_ai_service.return_value': "Spring"})
+        vis_mock.configure_mock(**{'get_palette_info.side_effect': Exception("Database error")})
         
         result = app.on_run_prediction(progress=MagicMock())
         
