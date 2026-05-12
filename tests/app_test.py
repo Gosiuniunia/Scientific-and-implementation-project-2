@@ -643,6 +643,9 @@ class TestPCOAApp:
     def test_on_run_prediction_image_loading_failure(self, app_with_mocks):
         """Test handling of image loading failures (get_image returns None)."""
         app, _, proc_mock, _ = app_with_mocks
+
+        app.image_processor = proc_mock
+        
         proc_mock.configure_mock(**{'get_image.return_value': None})
         mock_progress = MagicMock()
     
@@ -657,7 +660,9 @@ class TestPCOAApp:
     def test_on_run_prediction_preprocessing_exception(self, app_with_mocks):
         """Test coverage for 'except Exception' in the Preprocessing section."""
         app, _, proc_mock, _ = app_with_mocks
-    
+
+        app.image_processor = proc_mock
+
         proc_mock.configure_mock(**{'get_image.return_value': MagicMock()})
         proc_mock.configure_mock(**{'preprocess_image.side_effect': Exception("Preprocessing failed")})
         
@@ -667,7 +672,7 @@ class TestPCOAApp:
 
     def test_on_run_prediction_unsure_result_none(self, app_with_mocks):
         """Test coverage for unsure prediction logic (results.lower() == 'none')."""
-        app, ai_mock, proc_mock, vis_mock = app_with_mocks
+        app, proc_mock, vis_mock, ai_mock = app_with_mocks
         
         proc_mock.configure_mock(**{'get_image.return_value': MagicMock()})
         ai_mock.configure_mock(**{'get_prediction_from_ai_service.return_value': "none"})
@@ -681,7 +686,7 @@ class TestPCOAApp:
 
     def test_on_run_prediction_no_results_value_error(self, app_with_mocks):
         """Test coverage for ValueError when no prediction results are returned."""
-        app, ai_mock, proc_mock, _ = app_with_mocks
+        app, _, proc_mock, ai_mock = app_with_mocks
         
         proc_mock.configure_mock(**{'get_image.return_value': MagicMock()})
         proc_mock.configure_mock(**{'preprocess_image.return_value': MagicMock()})
@@ -693,12 +698,16 @@ class TestPCOAApp:
 
     def test_on_run_prediction_data_retrieval_exception(self, app_with_mocks):
         """Test coverage for exceptions in the Data Retrieval section."""
-        app, ai_mock, proc_mock, vis_mock = app_with_mocks
+        app, ai_mock, proc_mock, vis_mock  = app_with_mocks
         
+        app.result_visualiser = vis_mock
+        app.ai_model_orchestrator = ai_mock
+        app.image_processor = proc_mock
+
         proc_mock.configure_mock(**{'get_image.return_value': MagicMock()})
         ai_mock.configure_mock(**{'get_prediction_from_ai_service.return_value': "Spring"})
         vis_mock.configure_mock(**{'get_palette_info.side_effect': Exception("Database error")})
-        
+
         result = app.on_run_prediction(progress=MagicMock())
         
         found_error = any("Failed at Data Retrieval" in str(r) for r in result if isinstance(r, (str, dict)))
