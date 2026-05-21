@@ -86,7 +86,7 @@ def test_login_non_existent_user():
     assert msg == "User not found"
 
 def test_db_error_handling():
-    """TODO linijka 36"""
+    """Pokrycie linii 36: błąd bazy danych podczas rejestracji (np. brak nazwy użytkownika)."""
 
     success, msg = register_user( None, "pass")
     assert success is False
