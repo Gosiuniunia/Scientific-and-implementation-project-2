@@ -50,7 +50,8 @@ python -m pip install -r requirements.txt
 ### Run the application
 
 ```bash
-python ./run_pcoa_app.py
+uvicorn core.microservice:app --reload &
+python run_pcoa_app.py
 ```
 
 ---
@@ -84,7 +85,8 @@ python -m pip install -r requirements.txt
 ### Run the application
 
 ```bash
-python ./run_pcoa_app.py
+uvicorn core.microservice:app --reload &
+python run_pcoa_app.py
 ```
 
 or 
